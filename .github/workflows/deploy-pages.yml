@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -23,12 +25,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Sync KZY ZmanimScreens data
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          curl --fail --silent --show-error --location --retry 3 \
+            'https://kzy.zmanimscreens.com/api/data' \
+            --output "$tmp"
+          jq -n \
+            --arg fetchedAt "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --slurpfile payload "$tmp" \
+            '{fetchedAt:$fetchedAt,data:$payload[0]}' > kzy-data.json
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
         with:
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

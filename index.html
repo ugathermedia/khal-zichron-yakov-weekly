@@ -3,36 +3,66 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Khal Zichron Yakov Weekly</title>
   <link rel="stylesheet" href="styles.css">
+  <script defer src="https://unpkg.com/kosher-zmanim@0.9.0/dist/kosher-zmanim.min.js"></script>
+  <script defer src="app.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <div><strong>Khal Zichron Yakov Weekly</strong><span>Weekly production tool</span></div>
-    <div class="status" id="status">Ready</div>
+    <div class="brand">
+      <strong>Khal Zichron Yakov Weekly</strong>
+      <span>Weekly production tool</span>
+    </div>
+    <div class="status-cluster">
+      <div class="status" id="engineStatus">KosherZmanim loading…</div>
+      <div class="status" id="status">Ready</div>
+    </div>
   </header>
+
   <main>
     <section class="controls">
       <div class="eyebrow">WEEK</div>
       <div class="week-row">
-        <button id="prev">←</button>
-        <input id="friday" type="date">
-        <button id="next">→</button>
+        <button id="prev" aria-label="Previous week">←</button>
+        <input id="friday" type="date" aria-label="Friday date">
+        <button id="next" aria-label="Next week">→</button>
         <button id="thisWeek" class="quiet">This week</button>
       </div>
       <div id="weekTitle" class="week-title">Loading…</div>
+
       <div class="actions">
         <button id="refresh" class="primary">Refresh KZY schedule</button>
-        <button id="exportSvg">Export Affinity Panel SVG</button>
+        <button id="updateLinked">Connect / update Affinity SVG</button>
+        <button id="exportSvg">Download SVG</button>
+        <button id="clearOverrides" class="quiet">Clear overrides</button>
       </div>
-      <p class="note">Schedule data comes from KZY ZmanimScreens. Astronomical values are kept separate so they can be validated against KosherJava before production use.</p>
+
+      <div class="engine-card">
+        <div>
+          <div class="engine-card-title">Astronomical source</div>
+          <div class="engine-card-main">KosherZmanim 0.9.0 · KosherJava port</div>
+          <div class="engine-card-sub">41.09034, −74.04837 · 141 m · America/New_York · sea-level shkiah</div>
+        </div>
+        <div id="calibration" class="calibration">Waiting for engine…</div>
+      </div>
+
+      <p class="note">KZY ZmanimScreens supplies the shul's fixed times, offsets and rounding rules. KosherZmanim supplies the astronomical base zmanim. Manual edits are saved per week in this browser.</p>
     </section>
 
     <section class="workspace">
       <div class="editor">
-        <h2>Weekly schedule</h2>
+        <div class="editor-head">
+          <h2>Weekly schedule</h2>
+          <span id="linkedFile" class="linked-file">No linked SVG file</span>
+        </div>
         <div id="sourceNotice" class="source-notice">Waiting for KZY schedule…</div>
         <div id="fields"></div>
+        <details class="diagnostics">
+          <summary>Diagnostics</summary>
+          <pre id="diagnosticText">No diagnostics yet.</pre>
+        </details>
       </div>
 
       <div class="preview-wrap">
@@ -49,6 +79,5 @@
       </div>
     </section>
   </main>
-  <script src="app.js"></script>
 </body>
 </html>

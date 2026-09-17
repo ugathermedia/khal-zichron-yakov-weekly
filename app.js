@@ -21,11 +21,16 @@ const $ = s => document.querySelector(s);
 const pad2 = n => String(n).padStart(2, '0');
 const localISO = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 function comingFriday(from = new Date()) {
   const d = new Date(from);
   d.setHours(12, 0, 0, 0);
-  const add = (5 - d.getDay() + 7) % 7;
-  d.setDate(d.getDate() + add);
+  d.setDate(d.getDate() + ((5 - d.getDay() + 7) % 7));
   return d;
 }
 
@@ -41,12 +46,6 @@ function renderTitle() {
   const sat = addDays(state.friday, 1);
   $('#weekTitle').textContent = `Shabbos of ${sat.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
   $('#panelDate').textContent = `${state.friday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-}
-
-function addDays(date, days) {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
 }
 
 function boxes(raw) {
@@ -90,7 +89,9 @@ function minutesToClock(m) {
   const d = new Date(m * 60000);
   return new Intl.DateTimeFormat('en-US', {
     timeZone: LOCATION.timeZoneId,
-    hour: 'numeric', minute: '2-digit', hour12: true
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
   }).format(d).replace(' AM', '').replace(' PM', '');
 }
 
@@ -111,19 +112,19 @@ function loadEngine() {
 
   const known = localISO(state.friday) === '2026-09-18';
   const checks = [
-    ['Fri Plag', friday.PlagHamincha || friday.PlagHaminchaGRA, known ? '5:41' : null],
     ['Fri Shkia', friday.SeaLevelSunset, known ? '7:00' : null],
     ['Shab Shkia', shabbos.SeaLevelSunset, known ? '6:58' : null],
-    ['KS MGA 72', shabbos.SofZmanShmaMGA72Minutes, null],
-    ['KS GRA', shabbos.SofZmanShmaGRA, null],
+    ['KS MGA 72', shabbos.SofZmanShmaMGA72Minutes, known ? '9:09' : null],
+    ['KS GRA', shabbos.SofZmanShmaGRA, known ? '9:45' : null],
     ['Tzeis 72', shabbos.Tzais72 || shabbos.Tzais72Minutes, known ? '8:10' : null]
   ];
+
   state.diagnostics = checks.map(([label, raw, expected]) => `${label}: ${fmtDateTime(raw) || 'missing'}${expected ? ` (reference ${expected})` : ''}`);
   $('#diagnosticText').textContent = state.diagnostics.join('\n');
   $('#engineStatus').textContent = 'KosherZmanim ready';
 
   if (known) {
-    const pass = checks.filter(x => x[2]).every(([, raw, expected]) => fmtDateTime(raw) === expected);
+    const pass = checks.every(([, raw, expected]) => !expected || fmtDateTime(raw) === expected);
     $('#calibration').textContent = pass ? 'Sep 18–19 calibration ✓' : 'Calibration needs review';
   } else {
     $('#calibration').textContent = 'Engine active';
@@ -169,16 +170,36 @@ function automaticTime(row) {
   let mins = timeMinutes(base);
   const amount = Math.abs(Number(row.minutes || 0));
   const offset = String(row.offset || '').toLowerCase();
-
-  // ZmanimScreens KZY convention: explicit "after" is +; "before" or blank is -.
   const direction = offset.includes('after') ? 1 : -1;
   mins += direction * amount;
   mins = applyRounding(mins, row);
   return minutesToClock(mins);
 }
 
-function displayRow(row) {
-  const label = String(row.text || row.label || '').trim();
+function cleanShabbosLabel(label) {
+  const s = String(label || '').trim();
+  if (/shabbos day/i.test(s)) return 'שבת קודש';
+  if (/פלג/.test(s)) return 'פלג המנחה';
+  if (/הדלק/.test(s)) return 'הדלקת נרות';
+  if (/מנחה/.test(s) && /א/.test(s)) return 'מנחה א׳';
+  if (/מנחה/.test(s) && /ב/.test(s)) return 'מנחה ב׳';
+  if (/שקיעה/.test(s)) return 'שקיעה';
+  if (/שחרית/.test(s)) return 'שחרית';
+  if (/שיעור/.test(s)) return 'שיעור';
+  if (/אבות/.test(s)) return 'פרקי אבות';
+  if (/72/.test(s)) return 'צאת הכוכבים ר״ת';
+  if (/מעריב/.test(s)) return 'מעריב';
+  return s;
+}
+
+function displayRow(row, group) {
+  const rawLabel = String(row.text || row.label || '').trim();
+  const label = group === 'shabbos' ? cleanShabbosLabel(rawLabel) : rawLabel;
+
+  if (row.type === 'text' && !normalizeTime(row.time)) {
+    return { label: label || rawLabel, time: '', source: 'KZY section', raw: row, section: true };
+  }
+
   if (row.type === 'time') return { label, time: normalizeTime(row.time), source: 'KZY fixed', raw: row };
   if (row.type === 'text') return { label, time: normalizeTime(row.time), source: 'KZY text', raw: row };
 
@@ -194,42 +215,84 @@ function displayRow(row) {
   };
 }
 
-function supplementShabbos(rows) {
-  const fri = state.engine?.friday || {};
-  const shab = state.engine?.shabbos || {};
-  const result = [...rows];
-
-  const has = needle => result.some(r => `${r.label} ${r.source}`.toLowerCase().includes(needle));
-  const minchaA = result.find(r => /mincha.*a|מנחה.*א/i.test(r.label || '')) || result[0];
-
-  if (minchaA?.time && !has('לקראת שבת')) {
-    const m = parseClockForFriday(minchaA.time);
-    if (m != null) result.unshift({ label: 'לקראת שבת', time: clockFromLocalMinutes(Math.floor((m - 35) / 5) * 5), source: '35+ min before Mincha A; rounded down to :05' });
-  }
-
-  if (!result.some(r => /מג.?א|mga/i.test(r.label))) result.push({ label: 'סו״ז קריאת שמע מג״א', time: fmtDateTime(shab.SofZmanShmaMGA72Minutes), source: 'KosherZmanim MGA fixed 72' });
-  if (!result.some(r => /גר.?א|gra/i.test(r.label))) result.push({ label: 'סו״ז קריאת שמע גר״א', time: fmtDateTime(shab.SofZmanShmaGRA), source: 'KosherZmanim GRA' });
-  if (!result.some(r => /72/.test(`${r.label} ${r.source}`))) result.push({ label: 'צאת הכוכבים ר״ת', time: fmtDateTime(shab.Tzais72 || shab.Tzais72Minutes), source: 'KosherZmanim sunset +72' });
-
-  return result;
-}
-
 function parseClockForFriday(s) {
   const m = String(s).match(/(\d{1,2}):(\d{2})/);
   if (!m) return null;
   let h = Number(m[1]);
   const min = Number(m[2]);
-  // Weekly Mincha A is an afternoon/evening time.
   if (h < 12) h += 12;
   return h * 60 + min;
 }
 
 function clockFromLocalMinutes(m) {
   m = ((m % 1440) + 1440) % 1440;
-  let h = Math.floor(m / 60);
+  const h = Math.floor(m / 60);
   const min = m % 60;
-  const display = h % 12 || 12;
-  return `${display}:${pad2(min)}`;
+  return `${h % 12 || 12}:${pad2(min)}`;
+}
+
+function supplementShabbos(rows) {
+  const shab = state.engine?.shabbos || {};
+  const result = [...rows];
+
+  const firstMinchaA = result.find(r => !r.section && r.label === 'מנחה א׳');
+  if (firstMinchaA?.time && !result.some(r => r.label === 'לקראת שבת')) {
+    const m = parseClockForFriday(firstMinchaA.time);
+    if (m != null) {
+      result.unshift({
+        label: 'לקראת שבת',
+        time: clockFromLocalMinutes(Math.floor((m - 35) / 5) * 5),
+        source: '35+ min before Friday Mincha A; rounded down to :05'
+      });
+    }
+  }
+
+  const extras = [];
+  if (!result.some(r => /מג.?א|mga/i.test(r.label))) {
+    extras.push({ label: 'סו״ז קריאת שמע מג״א', time: fmtDateTime(shab.SofZmanShmaMGA72Minutes), source: 'KosherZmanim MGA fixed 72' });
+  }
+  if (!result.some(r => /גר.?א|gra/i.test(r.label))) {
+    extras.push({ label: 'סו״ז קריאת שמע גר״א', time: fmtDateTime(shab.SofZmanShmaGRA), source: 'KosherZmanim GRA' });
+  }
+
+  if (extras.length) {
+    const shacharisIndex = result.findIndex(r => r.label === 'שחרית');
+    const insertAt = shacharisIndex >= 0 ? shacharisIndex + 1 : result.length;
+    result.splice(insertAt, 0, ...extras);
+  }
+
+  if (!result.some(r => /72/.test(`${r.raw?.text || ''} ${r.source || ''}`) || r.label === 'צאת הכוכבים ר״ת')) {
+    result.push({ label: 'צאת הכוכבים ר״ת', time: fmtDateTime(shab.Tzais72 || shab.Tzais72Minutes), source: 'KosherZmanim sunset +72' });
+  }
+
+  return result;
+}
+
+function normalizeWeekdayRows(rows) {
+  let shacharis = 0;
+  let mincha = 0;
+  let maariv = 0;
+
+  return rows.map(r => {
+    if (r.section) return r;
+    const raw = String(r.label || '');
+
+    if (/שחרית/.test(raw)) {
+      shacharis += 1;
+      r.label = shacharis === 1 ? 'שחרית א׳' : shacharis === 2 ? 'שחרית ב׳' : 'שחרית ראשון / חג';
+    } else if (/מנחה/.test(raw)) {
+      mincha += 1;
+      r.label = mincha === 1 ? 'מנחה מוקדמת' : mincha === 2 ? 'מנחה מאוחרת א׳–ג׳' : 'מנחה מאוחרת ד׳–ה׳';
+    } else if (/מעריב/.test(raw)) {
+      maariv += 1;
+      r.label = maariv === 1 ? 'מעריב בשקיעה' : 'מעריב';
+      if (maariv === 1) {
+        r.time = 'שקיעה';
+        r.source = 'KZY: at shkiah';
+      }
+    }
+    return r;
+  });
 }
 
 function storageKey() {
@@ -241,11 +304,10 @@ function loadOverrides() {
 }
 
 function saveOverrides() {
-  const data = {
+  localStorage.setItem(storageKey(), JSON.stringify({
     shabbos: state.shabbos.map(r => r.time),
     weekday: state.weekday.map(r => r.time)
-  };
-  localStorage.setItem(storageKey(), JSON.stringify(data));
+  }));
 }
 
 function applyOverrides() {
@@ -256,6 +318,7 @@ function applyOverrides() {
 
 async function refresh() {
   $('#status').textContent = 'Loading…';
+
   try {
     loadEngine();
   } catch (e) {
@@ -269,19 +332,29 @@ async function refresh() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw = await res.json();
     state.raw = raw;
-    state.shabbos = supplementShabbos(orderedRows(findBox(raw, 'shabbos')).map(displayRow));
-    state.weekday = orderedRows(findBox(raw, 'weekday')).map(displayRow);
+
+    const shabbosRows = orderedRows(findBox(raw, 'shabbos')).map(r => displayRow(r, 'shabbos'));
+    const weekdayRows = orderedRows(findBox(raw, 'weekday')).map(r => displayRow(r, 'weekday'));
+
+    state.shabbos = supplementShabbos(shabbosRows);
+    state.weekday = normalizeWeekdayRows(weekdayRows);
     applyOverrides();
-    $('#sourceNotice').textContent = `Loaded live KZY schedule • ${new Date().toLocaleTimeString()}`;
+
+    $('#sourceNotice').textContent = `Loaded KZY schedule snapshot • ${new Date().toLocaleTimeString()}`;
     $('#status').textContent = 'KZY loaded';
   } catch (e) {
     state.shabbos = supplementShabbos([]);
     state.weekday = [];
     applyOverrides();
-    $('#sourceNotice').textContent = `KZY API unavailable (${e.message}). KosherZmanim and manual editing still work.`;
+    $('#sourceNotice').textContent = `KZY schedule unavailable (${e.message}). KosherZmanim and manual editing still work.`;
     $('#status').textContent = 'Offline schedule mode';
   }
+
   render();
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 }
 
 function editorRows() {
@@ -289,7 +362,12 @@ function editorRows() {
     ...state.shabbos.map((r, i) => ({ group: 'shabbos', i, r })),
     ...state.weekday.map((r, i) => ({ group: 'weekday', i, r }))
   ];
-  $('#fields').innerHTML = all.map(x => `<div class="field"><label>${esc(x.r.label || '(unnamed)')} <small title="${esc(x.r.source || '')}">· ${esc(x.r.source || '')}</small></label><input data-group="${x.group}" data-i="${x.i}" value="${esc(x.r.time || '')}"></div>`).join('');
+
+  $('#fields').innerHTML = all.map(x => {
+    if (x.r.section) return `<div class="field-section">${esc(x.r.label || '')}</div>`;
+    return `<div class="field"><label>${esc(x.r.label || '(unnamed)')} <small title="${esc(x.r.source || '')}">· ${esc(x.r.source || '')}</small></label><input data-group="${x.group}" data-i="${x.i}" value="${esc(x.r.time || '')}"></div>`;
+  }).join('');
+
   $('#fields').querySelectorAll('input').forEach(el => el.addEventListener('input', () => {
     state[el.dataset.group][+el.dataset.i].time = el.value;
     saveOverrides();
@@ -298,7 +376,10 @@ function editorRows() {
 }
 
 function rowsHTML(rows) {
-  return rows.map(r => `<div class="schedule-row"><div class="label">${esc(r.label || '')}</div><div class="time">${esc(r.time || '—')}</div></div>`).join('');
+  return rows.map(r => {
+    if (r.section) return `<div class="schedule-subsection">${esc(r.label || '')}</div>`;
+    return `<div class="schedule-row"><div class="label">${esc(r.label || '')}</div><div class="time">${esc(r.time || '—')}</div></div>`;
+  }).join('');
 }
 
 function renderPanel() {
@@ -311,15 +392,14 @@ function render() {
   renderPanel();
 }
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
-}
-
 function buildSVG() {
-  const W = 620, pad = 42, rowH = 31;
+  const W = 620;
+  const pad = 42;
+  const rowH = 31;
   const rows = [...state.shabbos, { section: true, label: 'זמני ימי החול' }, ...state.weekday];
   const H = 120 + rows.length * rowH + 35;
-  let y = 82, body = '';
+  let y = 82;
+  let body = '';
 
   for (const r of rows) {
     if (r.section) {
@@ -328,6 +408,7 @@ function buildSVG() {
       y += 24;
       continue;
     }
+
     body += `<text x="${W - pad}" y="${y}" text-anchor="end" class="label">${esc(r.label)}</text><text x="${pad}" y="${y}" class="time">${esc(r.time || '—')}</text><line x1="${pad}" x2="${W - pad}" y1="${y + 9}" y2="${y + 9}" class="line"/>`;
     y += rowH;
   }
@@ -350,6 +431,7 @@ async function updateLinkedSVG() {
     $('#linkedFile').textContent = 'Browser cannot directly overwrite files; downloaded SVG instead';
     return;
   }
+
   try {
     if (!state.linkedHandle) {
       state.linkedHandle = await window.showSaveFilePicker({

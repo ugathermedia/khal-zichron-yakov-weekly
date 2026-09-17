@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Khal Zichron Yakov Weekly</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>Khal Zichron Yakov Weekly</strong><span>Weekly production tool</span></div>
+    <div class="status" id="status">Ready</div>
+  </header>
+  <main>
+    <section class="controls">
+      <div class="eyebrow">WEEK</div>
+      <div class="week-row">
+        <button id="prev">←</button>
+        <input id="friday" type="date">
+        <button id="next">→</button>
+        <button id="thisWeek" class="quiet">This week</button>
+      </div>
+      <div id="weekTitle" class="week-title">Loading…</div>
+      <div class="actions">
+        <button id="refresh" class="primary">Refresh KZY schedule</button>
+        <button id="exportSvg">Export Affinity Panel SVG</button>
+      </div>
+      <p class="note">Schedule data comes from KZY ZmanimScreens. Astronomical values are kept separate so they can be validated against KosherJava before production use.</p>
+    </section>
+
+    <section class="workspace">
+      <div class="editor">
+        <h2>Weekly schedule</h2>
+        <div id="sourceNotice" class="source-notice">Waiting for KZY schedule…</div>
+        <div id="fields"></div>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="preview-label">AFFINITY PANEL PREVIEW</div>
+        <div id="panel" class="panel" dir="rtl">
+          <div class="panel-head">
+            <div class="hebrew-title">זמני שבת</div>
+            <div id="panelDate" class="panel-date"></div>
+          </div>
+          <div id="panelRows"></div>
+          <div class="section-title">זמני ימי החול</div>
+          <div id="weekdayRows"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

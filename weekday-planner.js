@@ -341,5 +341,14 @@
   const refreshButton = document.getElementById('refresh');
   if (refreshButton) refreshButton.onclick = () => window.refresh();
 
+  const clearButton = document.getElementById('clearOverrides');
+  if (clearButton) {
+    clearButton.onclick = async () => {
+      localStorage.removeItem(storageKey());
+      localStorage.removeItem(planKey());
+      await window.refresh();
+    };
+  }
+
   window.refresh();
 })();

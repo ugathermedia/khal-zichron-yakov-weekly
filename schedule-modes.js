@@ -28,6 +28,7 @@
   };
   const setSpecialTimes = data =>
     localStorage.setItem(SPECIAL_TIMES_PREFIX + getWeekKey(), JSON.stringify(data));
+  const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
 
   const SPECIAL_ROWS = [
     { key: 'men', label: 'דרשת שבת שובה – אנשים', ui: 'Men’s drasha' },
@@ -105,6 +106,32 @@
     return clockFromLocalMinutes(Math.floor((mins - 35) / 5) * 5);
   }
 
+  function shabbosShuvaDefaultTimes() {
+    const lateMinchaIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
+    const minchaTime = lateMinchaIndex >= 0 ? state.shabbos[lateMinchaIndex].time : '';
+    const minchaMinutes = clockMinutes(minchaTime);
+    if (minchaMinutes == null) return { men:'', ladies:'', children:'' };
+
+    const menMinutes = minchaMinutes - 50;
+    return {
+      men: clockFromLocalMinutes(menMinutes),
+      ladies: clockFromLocalMinutes(menMinutes - 70),
+      children: ''
+    };
+  }
+
+  function effectiveShabbosShuvaTimes(saved) {
+    const defaults = shabbosShuvaDefaultTimes();
+    const men = hasOwn(saved, 'men') ? saved.men : defaults.men;
+    const menMinutes = clockMinutes(men);
+    const ladiesDefault = menMinutes == null ? '' : clockFromLocalMinutes(menMinutes - 70);
+    return {
+      men,
+      ladies: hasOwn(saved, 'ladies') ? saved.ladies : ladiesDefault,
+      children: hasOwn(saved, 'children') ? saved.children : ''
+    };
+  }
+
   function applyScheduleModes() {
     // Remove previously injected special rows before recalculating.
     state.shabbos = state.shabbos.filter(r => !r.modeOwned);
@@ -167,11 +194,16 @@
 
     if (special === 'shabbos-shuva') {
       const times = getSpecialTimes();
+      const effective = effectiveShabbosShuvaTimes(times);
       const lateMinchaIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
       const specialRows = SPECIAL_ROWS.map(item => ({
         label: item.label,
-        time: times[item.key] || '',
-        source: 'Shabbos Shuva special schedule',
+        time: effective[item.key],
+        source: item.key === 'men'
+          ? 'Shabbos Shuva: 50 min before Mincha'
+          : item.key === 'ladies'
+            ? 'Shabbos Shuva: 1:10 before men’s drasha'
+            : 'Shabbos Shuva special schedule',
         modeOwned: true
       }));
 
@@ -290,9 +322,16 @@
     const wrap = document.getElementById('specialTimes');
     if (special === 'shabbos-shuva') {
       const times = getSpecialTimes();
-      wrap.innerHTML = SPECIAL_ROWS.map(item => `
-        <label>${item.ui}<input data-special-time="${item.key}" value="${times[item.key] || ''}" placeholder="time"></label>
-      `).join('');
+      const effective = effectiveShabbosShuvaTimes(times);
+      wrap.innerHTML = SPECIAL_ROWS.map(item => {
+        const value = effective[item.key];
+        const auto = item.key === 'men'
+          ? 'auto: 50 min before Mincha'
+          : item.key === 'ladies'
+            ? 'auto: 1:10 before men'
+            : 'manual';
+        return `<label>${item.ui}<input data-special-time="${item.key}" value="${value || ''}" placeholder="time"><span style="font-size:10px;color:#8a6b32">${auto}</span></label>`;
+      }).join('');
       wrap.querySelectorAll('[data-special-time]').forEach(input => {
         input.addEventListener('input', () => {
           const next = getSpecialTimes();
@@ -304,7 +343,7 @@
         });
       });
       document.getElementById('specialRuleNote').textContent =
-        'The regular 30-minute afternoon shiur is omitted. Enter the special men’s, ladies’ and children’s drasha times here.';
+        'The regular afternoon shiur is omitted. Men’s drasha auto-calculates 50 minutes before Mincha; ladies auto-calculates 1:10 before the men. Children remains manual. Any field can be overridden for this week.';
     } else {
       wrap.innerHTML = '';
       document.getElementById('specialRuleNote').textContent = 'No special-week override.';

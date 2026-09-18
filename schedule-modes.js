@@ -112,13 +112,23 @@
     const minchaMinutes = clockMinutes(minchaTime);
     if (minchaMinutes == null) return { men:'', ladies:'', children:'' };
 
-    // 5787 rule: men's drasha is 50 minutes before Mincha.
-    // Ladies' drasha is 1 hour 10 minutes before the men's drasha.
     const menMinutes = minchaMinutes - 50;
     return {
       men: clockFromLocalMinutes(menMinutes),
       ladies: clockFromLocalMinutes(menMinutes - 70),
       children: ''
+    };
+  }
+
+  function effectiveShabbosShuvaTimes(saved) {
+    const defaults = shabbosShuvaDefaultTimes();
+    const men = hasOwn(saved, 'men') ? saved.men : defaults.men;
+    const menMinutes = clockMinutes(men);
+    const ladiesDefault = menMinutes == null ? '' : clockFromLocalMinutes(menMinutes - 70);
+    return {
+      men,
+      ladies: hasOwn(saved, 'ladies') ? saved.ladies : ladiesDefault,
+      children: hasOwn(saved, 'children') ? saved.children : ''
     };
   }
 
@@ -184,11 +194,11 @@
 
     if (special === 'shabbos-shuva') {
       const times = getSpecialTimes();
-      const defaults = shabbosShuvaDefaultTimes();
+      const effective = effectiveShabbosShuvaTimes(times);
       const lateMinchaIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
       const specialRows = SPECIAL_ROWS.map(item => ({
         label: item.label,
-        time: hasOwn(times, item.key) ? times[item.key] : defaults[item.key],
+        time: effective[item.key],
         source: item.key === 'men'
           ? 'Shabbos Shuva: 50 min before Mincha'
           : item.key === 'ladies'
@@ -312,9 +322,9 @@
     const wrap = document.getElementById('specialTimes');
     if (special === 'shabbos-shuva') {
       const times = getSpecialTimes();
-      const defaults = shabbosShuvaDefaultTimes();
+      const effective = effectiveShabbosShuvaTimes(times);
       wrap.innerHTML = SPECIAL_ROWS.map(item => {
-        const value = hasOwn(times, item.key) ? times[item.key] : defaults[item.key];
+        const value = effective[item.key];
         const auto = item.key === 'men'
           ? 'auto: 50 min before Mincha'
           : item.key === 'ladies'

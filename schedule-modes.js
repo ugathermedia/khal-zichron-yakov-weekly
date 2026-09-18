@@ -4,7 +4,15 @@
   const SPECIAL_TIMES_PREFIX = 'kzy-weekly:special-times:';
 
   const getWeekKey = () => localISO(state.friday);
-  const getSeason = () => localStorage.getItem(SEASON_KEY) || 'shalosh';
+  const getSeason = () => {
+    const saved = localStorage.getItem(SEASON_KEY);
+    // Migrate the original two-mode control to the new three-season model.
+    if (saved === 'shalosh') return 'winter';
+    if (saved === 'no-shalosh') return 'summer-no-ss';
+    return saved || 'winter';
+  };
+  const seasonHasShaloshSeudos = season =>
+    season === 'winter' || season === 'summer-ss';
   const getSpecial = () => {
     const saved = localStorage.getItem(SPECIAL_PREFIX + getWeekKey());
     if (saved) return saved;
@@ -110,8 +118,16 @@
     const season = getSeason();
     const special = getSpecial();
 
+    // Winter omits Pirkei Avos entirely. Summer modes keep it if the KZY
+    // board supplies it.
+    if (season === 'winter') {
+      state.shabbos.forEach(r => {
+        if (!r.section && r.label === 'פרקי אבות') r.hiddenByMode = true;
+      });
+    }
+
     const minchaBIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
-    if (season === 'shalosh' && minchaBIndex >= 0) {
+    if (seasonHasShaloshSeudos(season) && minchaBIndex >= 0) {
       const minchaTime = seasonalMinchaTime();
       if (minchaTime) {
         const mincha = state.shabbos[minchaBIndex];
@@ -219,8 +235,9 @@
         <div>
           <div class="mode-title">Season</div>
           <div class="seg">
-            <button type="button" class="mode-btn" data-season="shalosh">Shalosh Seudos in shul</button>
-            <button type="button" class="mode-btn" data-season="no-shalosh">No Shalosh Seudos</button>
+            <button type="button" class="mode-btn" data-season="winter">Winter season</button>
+            <button type="button" class="mode-btn" data-season="summer-ss">Summer season · with SS</button>
+            <button type="button" class="mode-btn" data-season="summer-no-ss">Summer season · without SS</button>
           </div>
           <div class="mode-note" id="seasonRuleNote"></div>
         </div>
@@ -262,9 +279,13 @@
     select.value = special;
 
     const seasonNote = document.getElementById('seasonRuleNote');
-    seasonNote.textContent = season === 'shalosh'
-      ? 'Late Shabbos Mincha: 35–40 min before shkiah, to the prior :05. Regular shiur: 30 min before Mincha.'
-      : 'Uses the normal KZY board times for late Mincha and the regular shiur.';
+    if (season === 'winter') {
+      seasonNote.textContent = 'Shalosh Seudos in shul. Late Mincha: 35–40 min before shkiah, to the prior :05. Regular shiur: 30 min before Mincha. Pirkei Avos removed.';
+    } else if (season === 'summer-ss') {
+      seasonNote.textContent = 'Shalosh Seudos in shul. Late Mincha: 35–40 min before shkiah, to the prior :05. Regular shiur: 30 min before Mincha. Pirkei Avos remains.';
+    } else {
+      seasonNote.textContent = 'No Shalosh Seudos in shul. Uses the normal KZY board times for late Mincha and the regular shiur. Pirkei Avos remains.';
+    }
 
     const wrap = document.getElementById('specialTimes');
     if (special === 'shabbos-shuva') {

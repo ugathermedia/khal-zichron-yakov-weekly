@@ -170,10 +170,14 @@
     }
 
     if (def.kind === 'simchas-torah-sunday') {
+      const minchaOffset = def.afterShabbos ? -27 : -15;
+      const minchaBasis = def.afterShabbos
+        ? '2023 matching Shabbos configuration: 27 min before shkiah'
+        : '2025 non-Shabbos configuration: 15 min before shkiah';
       rows = [
         fixed('shacharis', 'שחרית', '8:15', '2025 + 2023'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
-        fixed('mincha', 'מנחה', '6:00', '2025 + 2023 fixed schedule'),
+        shifted('mincha', 'מנחה', sunset, minchaOffset, minchaBasis),
         textRow(def.key, 'neila', 'נעילת החג', '2025 + 2023'),
         exact('shkiah', 'שקיעה', sunset),
         shifted('maariv', 'מעריב', sunset, 55, '2025 + 2023: 55 min after shkiah'),
@@ -206,7 +210,7 @@
     { key:'ch-thu', date:'2026-10-01', english:'Thu 10/1', hebrew:'חול המועד / ליל הושענא רבה', kind:'chol-hamoed', hoshanaNight:true },
     { key:'hr', date:'2026-10-02', english:'Fri 10/2', hebrew:'הושענא רבה', kind:'hoshana-rabba-friday' },
     { key:'shemini', date:'2026-10-03', english:'Shabbos 10/3', hebrew:'שמיני עצרת', kind:'shemini-atzeres-shabbos', isShabbos:true },
-    { key:'st', date:'2026-10-04', english:'Sun 10/4', hebrew:'שמחת תורה', kind:'simchas-torah-sunday' }
+    { key:'st', date:'2026-10-04', english:'Sun 10/4', hebrew:'שמחת תורה', kind:'simchas-torah-sunday', afterShabbos:true }
   ];
 
   function buildPlanner() {

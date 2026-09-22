@@ -260,8 +260,8 @@
       rows: [
         { label: 'שחרית', time: flyerTime(mon, 'shacharis') },
         { label: 'מנחה מוקדמת', time: flyerTime(mon, 'mincha-early') },
-        { label: 'מנחה מאוחרת — Monday', time: flyerTime(mon, 'mincha-late') },
-        { label: 'מנחה מאוחרת — Tues–Thurs', time: flyerTime(tue, 'mincha-late') },
+        { label: 'מנחה מאוחרת — יום ב׳', time: flyerTime(mon, 'mincha-late') },
+        { label: 'מנחה מאוחרת — ג׳–ה׳', time: flyerTime(tue, 'mincha-late') },
         { label: 'מעריב', time: flyerTime(mon, 'maariv') }
       ]
     };
@@ -292,6 +292,18 @@
     ];
   }
 
+  function affinityVisualRtl(value) {
+    const s = String(value || '').trim();
+    if (!/[\u0590-\u05FF]/.test(s)) return s;
+    // Affinity's SVG importer lays Hebrew glyphs out left-to-right even when
+    // SVG direction/unicode-bidi are present. Export the visual order instead:
+    // reverse RTL token order, reverse Hebrew token glyph order, but preserve
+    // LTR/numeric tokens such as (72), 10:45, and ALL-NIGHT.
+    return s.split(/\s+/).reverse().map(token =>
+      /[\u0590-\u05FF]/.test(token) ? Array.from(token).reverse().join('') : token
+    ).join(' ');
+  }
+
   function buildSuccosAffinitySVG(days) {
     const W = 612;
     const H = 792;
@@ -307,6 +319,8 @@
 
     const text = (x, y, value, cls, anchor = 'start') =>
       `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${esc(value || '')}</text>`;
+    const rtlText = (x, y, value, cls, anchor = 'end') =>
+      text(x, y, affinityVisualRtl(value), cls, anchor);
 
     let body = '';
     columns.forEach((sections, col) => {
@@ -316,13 +330,13 @@
       sections.forEach((section, sectionIndex) => {
         if (sectionIndex) y += sectionGap;
         body += `<rect x="${x}" y="${y}" width="${colW}" height="${headH}" rx="2" class="section-bg"/>`;
-        body += text(x + colW - 8, y + 17, section.title, 'section-title', 'end');
+        body += rtlText(x + colW - 8, y + 17, section.title, 'section-title', 'end');
         body += text(x + 8, y + 17, section.subtitle, 'section-date', 'start');
         y += headH;
 
         section.rows.forEach(r => {
           body += `<line x1="${x}" x2="${x + colW}" y1="${y + rowH}" y2="${y + rowH}" class="rule"/>`;
-          body += text(x + colW - 8, y + 13, r.label, 'row-label', 'end');
+          body += /[\u0590-\u05FF]/.test(r.label) ? rtlText(x + colW - 8, y + 13, r.label, 'row-label', 'end') : text(x + colW - 8, y + 13, r.label, 'row-label-ltr', 'end');
           if (r.time) body += text(x + 8, y + 13, r.time.replaceAll(' · ', ', '), 'row-time', 'start');
           y += rowH;
         });
@@ -333,7 +347,7 @@
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="8.5in" height="11in" viewBox="0 0 ${W} ${H}">
       <style>
-        .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:plaintext}
+        .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif}.row-label-ltr{font-family:Arial,sans-serif}
         .title{font-size:28px;font-weight:700;fill:#18263e}
         .subtitle{font-family:Arial,sans-serif;font-size:9.4px;letter-spacing:.6px;fill:#6c7480}
         .section-bg{fill:#18263e}
@@ -346,7 +360,7 @@
         .footer{font-family:Arial,sans-serif;font-size:7.2px;fill:#5f6875}
       </style>
       <rect width="${W}" height="${H}" fill="#fff"/>
-      ${text(W / 2, 36, 'סוכות תשפ״ז', 'title', 'middle')}
+      ${rtlText(W / 2, 36, 'סוכות תשפ״ז', 'title', 'middle')}
       ${text(W / 2, 54, 'KHAL ZICHRON YAKOV  •  SEPTEMBER 25 – OCTOBER 4, 2026', 'subtitle', 'middle')}
       <line x1="${margin}" x2="${W - margin}" y1="65" y2="65" stroke="#18263e" stroke-width="1.2"/>
       ${body}

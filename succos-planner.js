@@ -406,7 +406,8 @@
             <div class="sp-note">2025 is the schedule master. 2023 is used only where the Friday/Shabbos/Sunday configuration changes the program. Every astronomical value comes from the same KosherZmanim 0.9.0 / KosherJava calculation layer used by this app, at KZY's saved coordinates and sea-level shkiah. Offsets are applied to the exact instant before display rounding.</div>
           </div>
           <div>
-            <button type="button" id="succosCopy">Copy schedule</button>\n            <button type="button" id="succosAffinity">Export one-page Affinity SVG</button>
+            <button type="button" id="succosCopy">Copy schedule</button>
+            <button type="button" id="succosAffinity">Export one-page Affinity SVG</button>
             <button type="button" id="succosReset">Reset Succos overrides</button>
           </div>
         </div>

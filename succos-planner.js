@@ -108,8 +108,8 @@
         shifted('mincha', 'מנחה', sunset, -25, '2023 Shabbos precedent: 25 min before shkiah'),
         textRow(def.key, 'shiur', 'שיעור מאת הרב שליט״א', '2023 Shabbos override; untimed'),
         exact('shkiah', 'שקיעה', sunset),
-        exact('maariv', 'מעריב', tzais72, 'Motzei Shabbos rule: use 72-minute zman only'),
-        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos rule: use 72-minute zman only'),
+        exact('maariv', 'מעריב', tzais50, '2023 Motzei Shabbos precedent: Maariv at exact shkiah + 50 minutes'),
+        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos: candle lighting waits for the 72-minute zman'),
         fixed('simchas', 'שמחת בית השואבה', '10:00', '2023 Shabbos override; 2025 non-Shabbos time was 9:45')
       ];
     }
@@ -164,8 +164,8 @@
         shifted('farewell', 'תפילה לפרידה מן הסוכה', sunset, -44, '2023 Shabbos precedent: 44 min before shkiah'),
         shifted('mincha', 'מנחה', sunset, -24, '2023 Shabbos precedent: 24 min before shkiah'),
         exact('shkiah', 'שקיעה', sunset),
-        exact('maariv', 'מעריב', tzais72, 'Motzei Shabbos rule: use 72-minute zman only'),
-        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos rule: use 72-minute zman only')
+        exact('maariv', 'מעריב', tzais50, '2023 Motzei Shabbos precedent: Maariv at exact shkiah + 50 minutes'),
+        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos: candle lighting waits for the 72-minute zman')
       ];
     }
 
@@ -189,7 +189,7 @@
         sunset: fmtRaw(sunset),
         ksMga72: fmtRaw(ksMga72),
         ksGra: fmtRaw(ksGra),
-        tzais50: def.isShabbos ? '—' : fmtRaw(tzais50),
+        tzais50: fmtRaw(tzais50),
         tzais72: fmtRaw(tzais72)
       },
       rows
@@ -273,11 +273,11 @@
         <div id="succosDays" class="sp-days"></div>
         <div class="sp-raw-wrap">
           <table class="sp-raw">
-            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>Tzais 50</th><th>Tzais 72</th></tr></thead>
+            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>+50 min</th><th>Tzais 72</th></tr></thead>
             <tbody id="succosRaw"></tbody>
           </table>
         </div>
-        <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. Tzais 50 remains available for non-Shabbos Yom Tov transitions; on Motzei Shabbos it is not applicable and 72 minutes is used. Every schedule field remains manually overrideable.</div>
+        <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. The +50 column is a diagnostic offset from exact shkiah. On Motzei Shabbos it is used for Maariv only; candle lighting waits until +72. On non-Shabbos Yom Tov transitions, +50 remains the earlier candle-lighting option. Every schedule field remains manually overrideable.</div>
       </div>`;
     const anchor = document.getElementById('weekdayPlannerCard') || document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);

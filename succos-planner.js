@@ -79,7 +79,6 @@
     const sunrise = z.SeaLevelSunrise || z.Sunrise;
     const ksMga72 = z.SofZmanShmaMGA72Minutes;
     const ksGra = z.SofZmanShmaGRA;
-    const tzais50 = sunset ? new Date(new Date(sunset).getTime() + 50 * 60000).toISOString() : null;
     const tzais72 = z.Tzais72 || z.Tzais72Minutes;
     const plag = z.PlagHamincha || z.PlagHaminchaGRA;
 
@@ -108,9 +107,8 @@
         shifted('mincha', 'מנחה', sunset, -25, '2023 Shabbos precedent: 25 min before shkiah'),
         textRow(def.key, 'shiur', 'שיעור מאת הרב שליט״א', '2023 Shabbos override; untimed'),
         exact('shkiah', 'שקיעה', sunset),
-        exact('tzais50', 'צה״כ (50)', tzais50, 'Astronomical rule: exact sea-level shkiah + 50 minutes'),
-        shifted('maariv', 'מעריב', sunset, 50, '2023 Shabbos precedent: Maariv at the 50-minute zman'),
-        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Astronomical: sunset + 72; Shabbos → no 50-minute option'),
+        exact('maariv', 'מעריב', tzais72, 'Motzei Shabbos rule: use 72-minute zman only'),
+        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos rule: use 72-minute zman only'),
         fixed('simchas', 'שמחת בית השואבה', '10:00', '2023 Shabbos override; 2025 non-Shabbos time was 9:45')
       ];
     }
@@ -165,9 +163,8 @@
         shifted('farewell', 'תפילה לפרידה מן הסוכה', sunset, -44, '2023 Shabbos precedent: 44 min before shkiah'),
         shifted('mincha', 'מנחה', sunset, -24, '2023 Shabbos precedent: 24 min before shkiah'),
         exact('shkiah', 'שקיעה', sunset),
-        exact('tzais50', 'צה״כ (50)', tzais50, 'Astronomical rule: exact sea-level shkiah + 50 minutes'),
-        shifted('maariv', 'מעריב', sunset, 50, '2023 Shabbos precedent: Maariv at the 50-minute zman'),
-        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Astronomical: sunset + 72; Shabbos → no 50-minute option')
+        exact('maariv', 'מעריב', tzais72, 'Motzei Shabbos rule: use 72-minute zman only'),
+        exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos rule: use 72-minute zman only')
       ];
     }
 
@@ -191,7 +188,6 @@
         sunset: fmtRaw(sunset),
         ksMga72: fmtRaw(ksMga72),
         ksGra: fmtRaw(ksGra),
-        tzais50: fmtRaw(tzais50),
         tzais72: fmtRaw(tzais72)
       },
       rows
@@ -275,7 +271,7 @@
         <div id="succosDays" class="sp-days"></div>
         <div class="sp-raw-wrap">
           <table class="sp-raw">
-            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>Tzais 50</th><th>Tzais 72</th></tr></thead>
+            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>Tzais 72</th></tr></thead>
             <tbody id="succosRaw"></tbody>
           </table>
         </div>
@@ -309,7 +305,7 @@
       </section>`).join('');
 
     document.getElementById('succosRaw').innerHTML = days.map(day => `
-      <tr><td>${esc(day.english)}</td><td>${esc(day.raw.sunrise)}</td><td>${esc(day.raw.plag)}</td><td>${esc(day.raw.sunset)}</td><td>${esc(day.raw.ksMga72)}</td><td>${esc(day.raw.ksGra)}</td><td>${esc(day.raw.tzais50)}</td><td>${esc(day.raw.tzais72)}</td></tr>`).join('');
+      <tr><td>${esc(day.english)}</td><td>${esc(day.raw.sunrise)}</td><td>${esc(day.raw.plag)}</td><td>${esc(day.raw.sunset)}</td><td>${esc(day.raw.ksMga72)}</td><td>${esc(day.raw.ksGra)}</td><td>${esc(day.raw.tzais72)}</td></tr>`).join('');
 
     document.querySelectorAll('[data-succos-id]').forEach(input => {
       input.addEventListener('change', () => {

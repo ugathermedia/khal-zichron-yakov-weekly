@@ -280,14 +280,12 @@
       [
         flyerSection(byKey['erev-sukkos']),
         flyerSection(byKey['day1']),
-        flyerSection(byKey['day2'])
+        flyerSection(byKey['day2']),
+        cholHamoed
       ],
       [
-        cholHamoed,
         hoshanaNight,
-        flyerSection(byKey['hr'])
-      ],
-      [
+        flyerSection(byKey['hr']),
         flyerSection(byKey['shemini']),
         flyerSection(byKey['st'])
       ]
@@ -297,13 +295,13 @@
   function buildSuccosAffinitySVG(days) {
     const W = 612;
     const H = 792;
-    const margin = 26;
-    const gap = 12;
-    const colW = (W - margin * 2 - gap * 2) / 3;
-    const topY = 78;
-    const bottomY = 755;
-    const rowH = 17;
-    const headH = 23;
+    const margin = 28;
+    const gap = 18;
+    const colW = (W - margin * 2 - gap) / 2;
+    const topY = 80;
+    const bottomY = 744;
+    const rowH = 18.5;
+    const headH = 26;
     const sectionGap = 8;
     const columns = buildAffinityColumns(days);
 
@@ -318,14 +316,14 @@
       sections.forEach((section, sectionIndex) => {
         if (sectionIndex) y += sectionGap;
         body += `<rect x="${x}" y="${y}" width="${colW}" height="${headH}" rx="2" class="section-bg"/>`;
-        body += text(x + colW - 7, y + 15, section.title, 'section-title', 'end');
-        body += text(x + 7, y + 15, section.subtitle, 'section-date', 'start');
+        body += text(x + colW - 8, y + 17, section.title, 'section-title', 'end');
+        body += text(x + 8, y + 17, section.subtitle, 'section-date', 'start');
         y += headH;
 
         section.rows.forEach(r => {
           body += `<line x1="${x}" x2="${x + colW}" y1="${y + rowH}" y2="${y + rowH}" class="rule"/>`;
-          body += text(x + colW - 7, y + 12, r.label, 'row-label', 'end');
-          if (r.time) body += text(x + 7, y + 12, r.time.replaceAll(' · ', ', '), 'row-time', 'start');
+          body += text(x + colW - 8, y + 13, r.label, 'row-label', 'end');
+          if (r.time) body += text(x + 8, y + 13, r.time.replaceAll(' · ', ', '), 'row-time', 'start');
           y += rowH;
         });
       });
@@ -336,13 +334,13 @@
     return `<svg xmlns="http://www.w3.org/2000/svg" width="8.5in" height="11in" viewBox="0 0 ${W} ${H}">
       <style>
         .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:plaintext}
-        .title{font-size:25px;font-weight:700;fill:#18263e}
-        .subtitle{font-family:Arial,sans-serif;font-size:9px;letter-spacing:.6px;fill:#6c7480}
+        .title{font-size:28px;font-weight:700;fill:#18263e}
+        .subtitle{font-family:Arial,sans-serif;font-size:9.4px;letter-spacing:.6px;fill:#6c7480}
         .section-bg{fill:#18263e}
-        .section-title{font-size:10.4px;font-weight:700;fill:#fff}
-        .section-date{font-family:Arial,sans-serif;font-size:7.4px;fill:#dfe6f0}
-        .row-label{font-size:8.8px;font-weight:600;fill:#1e293b}
-        .row-time{font-family:Arial,sans-serif;font-size:8.8px;font-weight:700;fill:#111827}
+        .section-title{font-size:11.5px;font-weight:700;fill:#fff}
+        .section-date{font-family:Arial,sans-serif;font-size:8.2px;fill:#dfe6f0}
+        .row-label{font-size:9.8px;font-weight:600;fill:#1e293b}
+        .row-time{font-family:Arial,sans-serif;font-size:9.8px;font-weight:700;fill:#111827}
         .rule{stroke:#d9dde3;stroke-width:.6}
         .column-end{stroke:#18263e;stroke-width:1}
         .footer{font-family:Arial,sans-serif;font-size:7.2px;fill:#5f6875}

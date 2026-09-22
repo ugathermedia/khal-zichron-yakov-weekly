@@ -34,6 +34,15 @@
     return clockFromLocalMinutes(Math.floor((p.h * 60 + p.m) / 5) * 5);
   }
 
+  function roundedOffset(value, minutes, step = 5) {
+    if (!value) return '';
+    const shifted = new Date(new Date(value).getTime() + minutes * 60000);
+    const p = localParts(shifted);
+    if (!p) return '';
+    const total = p.h * 60 + p.m + p.s / 60;
+    return clockFromLocalMinutes(Math.round(total / step) * step);
+  }
+
   function fmtRaw(value) {
     return value ? fmtDateTime(value) : '—';
   }
@@ -135,7 +144,7 @@
 
     if (def.kind === 'hoshana-rabba-friday') {
       rows = [
-        fixed('shacharis-a', 'שחרית א׳', '6:15', '2023 Friday override; fixed shul schedule'),
+        row(def.key, 'shacharis-a', 'שחרית א׳', roundedOffset(sunrise, -45), '2025 + 2023 pattern: approximately 45 min before Haneitz, rounded to nearest :05', 'rule'),
         exact('netz', 'הנץ', sunrise, 'Astronomical: sea-level sunrise'),
         fixed('shacharis-b', 'שחרית ב׳', '8:45', '2025 + 2023'),
         shifted('candles', 'הדלקת נרות', sunset, -18, 'Astronomical: 18 min before sea-level shkiah; exact pattern in 2025 + 2023'),

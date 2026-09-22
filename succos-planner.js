@@ -79,6 +79,7 @@
     const sunrise = z.SeaLevelSunrise || z.Sunrise;
     const ksMga72 = z.SofZmanShmaMGA72Minutes;
     const ksGra = z.SofZmanShmaGRA;
+    const tzais50 = sunset ? new Date(new Date(sunset).getTime() + 50 * 60000).toISOString() : null;
     const tzais72 = z.Tzais72 || z.Tzais72Minutes;
     const plag = z.PlagHamincha || z.PlagHaminchaGRA;
 
@@ -188,6 +189,7 @@
         sunset: fmtRaw(sunset),
         ksMga72: fmtRaw(ksMga72),
         ksGra: fmtRaw(ksGra),
+        tzais50: def.isShabbos ? '—' : fmtRaw(tzais50),
         tzais72: fmtRaw(tzais72)
       },
       rows
@@ -196,14 +198,14 @@
 
   const DAY_DEFS = [
     { key:'erev-sukkos', date:'2026-09-25', english:'Fri 9/25', hebrew:'ערב סוכות', kind:'erev-sukkos-friday' },
-    { key:'day1', date:'2026-09-26', english:'Shabbos 9/26', hebrew:'א׳ דסוכות – אום נצורה', kind:'sukkos-day1-shabbos' },
+    { key:'day1', date:'2026-09-26', english:'Shabbos 9/26', hebrew:'א׳ דסוכות – אום נצורה', kind:'sukkos-day1-shabbos', isShabbos:true },
     { key:'day2', date:'2026-09-27', english:'Sun 9/27', hebrew:'ב׳ דסוכות – למען אמיתך', kind:'sukkos-day2-sunday' },
     { key:'ch-mon', date:'2026-09-28', english:'Mon 9/28', hebrew:'חול המועד', kind:'chol-hamoed' },
     { key:'ch-tue', date:'2026-09-29', english:'Tue 9/29', hebrew:'חול המועד', kind:'chol-hamoed' },
     { key:'ch-wed', date:'2026-09-30', english:'Wed 9/30', hebrew:'חול המועד', kind:'chol-hamoed' },
     { key:'ch-thu', date:'2026-10-01', english:'Thu 10/1', hebrew:'חול המועד / ליל הושענא רבה', kind:'chol-hamoed', hoshanaNight:true },
     { key:'hr', date:'2026-10-02', english:'Fri 10/2', hebrew:'הושענא רבה', kind:'hoshana-rabba-friday' },
-    { key:'shemini', date:'2026-10-03', english:'Shabbos 10/3', hebrew:'שמיני עצרת', kind:'shemini-atzeres-shabbos' },
+    { key:'shemini', date:'2026-10-03', english:'Shabbos 10/3', hebrew:'שמיני עצרת', kind:'shemini-atzeres-shabbos', isShabbos:true },
     { key:'st', date:'2026-10-04', english:'Sun 10/4', hebrew:'שמחת תורה', kind:'simchas-torah-sunday' }
   ];
 
@@ -271,11 +273,11 @@
         <div id="succosDays" class="sp-days"></div>
         <div class="sp-raw-wrap">
           <table class="sp-raw">
-            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>Tzais 72</th></tr></thead>
+            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>Tzais 50</th><th>Tzais 72</th></tr></thead>
             <tbody id="succosRaw"></tbody>
           </table>
         </div>
-        <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. Every schedule field remains manually overrideable.</div>
+        <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. Tzais 50 remains available for non-Shabbos Yom Tov transitions; on Motzei Shabbos it is not applicable and 72 minutes is used. Every schedule field remains manually overrideable.</div>
       </div>`;
     const anchor = document.getElementById('weekdayPlannerCard') || document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);
@@ -305,7 +307,7 @@
       </section>`).join('');
 
     document.getElementById('succosRaw').innerHTML = days.map(day => `
-      <tr><td>${esc(day.english)}</td><td>${esc(day.raw.sunrise)}</td><td>${esc(day.raw.plag)}</td><td>${esc(day.raw.sunset)}</td><td>${esc(day.raw.ksMga72)}</td><td>${esc(day.raw.ksGra)}</td><td>${esc(day.raw.tzais72)}</td></tr>`).join('');
+      <tr><td>${esc(day.english)}</td><td>${esc(day.raw.sunrise)}</td><td>${esc(day.raw.plag)}</td><td>${esc(day.raw.sunset)}</td><td>${esc(day.raw.ksMga72)}</td><td>${esc(day.raw.ksGra)}</td><td>${esc(day.raw.tzais50)}</td><td>${esc(day.raw.tzais72)}</td></tr>`).join('');
 
     document.querySelectorAll('[data-succos-id]').forEach(input => {
       input.addEventListener('change', () => {

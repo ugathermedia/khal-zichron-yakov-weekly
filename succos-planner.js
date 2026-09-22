@@ -251,28 +251,29 @@
     const byKey = Object.fromEntries(days.map(d => [d.key, d]));
     const mon = byKey['ch-mon'];
     const tue = byKey['ch-tue'];
-    const wed = byKey['ch-wed'];
     const thu = byKey['ch-thu'];
 
     const cholHamoed = {
       title: 'חול המועד',
-      subtitle: 'Mon–Thu 9/28–10/1',
+      subtitle: 'Mon–Wed 9/28–9/30',
       rows: [
         { label: 'שחרית', time: flyerTime(mon, 'shacharis') },
-        { label: 'מנחה מוקדמת', time: flyerTime(mon, 'mincha-early') },
-        { label: 'מנחה מאוחרת — יום ב׳', time: flyerTime(mon, 'mincha-late') },
-        { label: 'מנחה מאוחרת — ג׳–ה׳', time: flyerTime(tue, 'mincha-late') },
+        { label: 'מנחה — יום ב׳', time: `${flyerTime(mon, 'mincha-early')}, ${flyerTime(mon, 'mincha-late')}` },
+        { label: 'מנחה — ג׳–ד׳', time: `${flyerTime(tue, 'mincha-early')}, ${flyerTime(tue, 'mincha-late')}` },
         { label: 'מעריב', time: flyerTime(mon, 'maariv') }
       ]
     };
 
-    const hoshanaNight = {
-      title: 'ליל הושענא רבה',
+    const hoshanaNightDay = {
+      title: 'חול המועד / ליל הושענא רבה',
       subtitle: 'Thursday 10/1',
       rows: [
-        { label: 'סדר לימוד לכבוד הושענא רבה', time: flyerTime(thu, 'seder') },
-        { label: 'דברי תורה והתעוררות', time: flyerTime(thu, 'divrei') },
-        { label: 'ALL-NIGHT SEDER', time: '' }
+        { label: 'שחרית', time: flyerTime(thu, 'shacharis') },
+        { label: 'מנחה', time: `${flyerTime(thu, 'mincha-early')}, ${flyerTime(thu, 'mincha-late')}` },
+        { label: 'מעריב', time: flyerTime(thu, 'maariv') },
+        { label: 'סדר לימוד לכבוד הושענא רבה', time: flyerTime(thu, 'seder'), accent: true },
+        { label: 'דברי תורה והתעוררות', time: flyerTime(thu, 'divrei'), accent: true },
+        { label: 'ALL-NIGHT LEARNING', time: '', accent: true }
       ]
     };
 
@@ -284,7 +285,7 @@
         cholHamoed
       ],
       [
-        hoshanaNight,
+        hoshanaNightDay,
         flyerSection(byKey['hr']),
         flyerSection(byKey['shemini']),
         flyerSection(byKey['st'])
@@ -307,14 +308,13 @@
   function buildSuccosAffinitySVG(days) {
     const W = 612;
     const H = 792;
-    const margin = 28;
-    const gap = 18;
+    const margin = 30;
+    const gap = 20;
     const colW = (W - margin * 2 - gap) / 2;
-    const topY = 80;
-    const bottomY = 744;
-    const rowH = 18.5;
-    const headH = 26;
-    const sectionGap = 8;
+    const topY = 174;
+    const rowH = 14;
+    const headH = 21;
+    const sectionGap = 6;
     const columns = buildAffinityColumns(days);
 
     const text = (x, y, value, cls, anchor = 'start') =>
@@ -329,42 +329,44 @@
 
       sections.forEach((section, sectionIndex) => {
         if (sectionIndex) y += sectionGap;
-        body += `<rect x="${x}" y="${y}" width="${colW}" height="${headH}" rx="2" class="section-bg"/>`;
-        body += rtlText(x + colW - 8, y + 17, section.title, 'section-title', 'end');
-        body += text(x + 8, y + 17, section.subtitle, 'section-date', 'start');
+
+        body += text(x + 2, y + 12, section.subtitle, 'section-date', 'start');
+        body += rtlText(x + colW - 2, y + 12, section.title, 'section-title', 'end');
+        body += `<line x1="${x}" x2="${x + colW}" y1="${y + 18}" y2="${y + 18}" class="gold-rule"/>`;
         y += headH;
 
         section.rows.forEach(r => {
-          body += `<line x1="${x}" x2="${x + colW}" y1="${y + rowH}" y2="${y + rowH}" class="rule"/>`;
-          body += /[\u0590-\u05FF]/.test(r.label) ? rtlText(x + colW - 8, y + 13, r.label, 'row-label', 'end') : text(x + colW - 8, y + 13, r.label, 'row-label-ltr', 'end');
-          if (r.time) body += text(x + 8, y + 13, r.time.replaceAll(' · ', ', '), 'row-time', 'start');
+          const rowClass = r.accent ? 'row-label accent' : 'row-label';
+          const timeClass = r.accent ? 'row-time accent' : 'row-time';
+          if (/[֐-׿]/.test(r.label)) {
+            body += rtlText(x + colW - 2, y + 10, r.label, rowClass, 'end');
+          } else {
+            body += text(x + colW - 2, y + 10, r.label, r.accent ? 'row-label-ltr accent' : 'row-label-ltr', 'end');
+          }
+          if (r.time) body += text(x + 2, y + 10, r.time.replaceAll(' · ', ', '), timeClass, 'start');
           y += rowH;
         });
       });
-
-      body += `<line x1="${x}" x2="${x + colW}" y1="${bottomY}" y2="${bottomY}" class="column-end"/>`;
     });
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="8.5in" height="11in" viewBox="0 0 ${W} ${H}">
       <style>
-        .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif}.row-label-ltr{font-family:Arial,sans-serif}
-        .title{font-size:28px;font-weight:700;fill:#18263e}
-        .subtitle{font-family:Arial,sans-serif;font-size:9.4px;letter-spacing:.6px;fill:#6c7480}
-        .section-bg{fill:#18263e}
-        .section-title{font-size:11.5px;font-weight:700;fill:#fff}
-        .section-date{font-family:Arial,sans-serif;font-size:8.2px;fill:#dfe6f0}
-        .row-label{font-size:9.8px;font-weight:600;fill:#1e293b}
-        .row-time{font-family:Arial,sans-serif;font-size:9.8px;font-weight:700;fill:#111827}
-        .rule{stroke:#d9dde3;stroke-width:.6}
-        .column-end{stroke:#18263e;stroke-width:1}
-        .footer{font-family:Arial,sans-serif;font-size:7.2px;fill:#5f6875}
+        .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif}
+        .title{font-size:25px;font-weight:700;fill:#ffffff}
+        .subtitle{font-family:Arial,sans-serif;font-size:8.6px;letter-spacing:1px;fill:#d5c08a}
+        .section-title{font-size:11.2px;font-weight:700;fill:#263250}
+        .section-date{font-family:Arial,sans-serif;font-size:7.6px;letter-spacing:.25px;fill:#7f8a98}
+        .row-label{font-size:8.9px;font-weight:500;fill:#2b3445}
+        .row-label-ltr{font-family:Arial,sans-serif;font-size:8.9px;font-weight:500;fill:#2b3445}
+        .row-time{font-family:Arial,sans-serif;font-size:8.9px;font-weight:700;fill:#263250}
+        .accent{fill:#9a7a34;font-weight:700}
+        .gold-rule{stroke:#c7a55a;stroke-width:.8}
+        .column-rule{stroke:#d8dde2;stroke-width:.55}
       </style>
-      <rect width="${W}" height="${H}" fill="#fff"/>
-      ${rtlText(W / 2, 36, 'סוכות תשפ״ז', 'title', 'middle')}
-      ${text(W / 2, 54, 'KHAL ZICHRON YAKOV  •  SEPTEMBER 25 – OCTOBER 4, 2026', 'subtitle', 'middle')}
-      <line x1="${margin}" x2="${W - margin}" y1="65" y2="65" stroke="#18263e" stroke-width="1.2"/>
+      ${rtlText(425, 82, 'סוכות תשפ״ז', 'title', 'middle')}
+      ${text(425, 102, 'SUCCOS SCHEDULE  •  5787 / 2026', 'subtitle', 'middle')}
+      <line x1="${W / 2}" x2="${W / 2}" y1="${topY}" y2="710" class="column-rule"/>
       ${body}
-      ${text(W / 2, 777, 'Khal Zichron Yakov  •  8 Roxbury Court  •  Chestnut Ridge, NY 10977', 'footer', 'middle')}
     </svg>`;
   }
 
@@ -419,7 +421,7 @@
           </div>
           <div>
             <button type="button" id="succosCopy">Copy schedule</button>
-            <button type="button" id="succosAffinity">Export one-page Affinity SVG</button>
+            <button type="button" id="succosAffinity">Export editorial Affinity SVG</button>
             <button type="button" id="succosReset">Reset Succos overrides</button>
           </div>
         </div>

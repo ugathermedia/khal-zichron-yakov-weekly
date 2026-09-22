@@ -324,7 +324,7 @@
 
     let body = '';
     columns.forEach((sections, col) => {
-      const x = margin + col * (colW + gap);
+      // Hebrew reading order: the first/earlier-day column is on the RIGHT.\n      const x = W - margin - colW - col * (colW + gap);
       let y = topY;
 
       sections.forEach((section, sectionIndex) => {
@@ -338,6 +338,10 @@
         section.rows.forEach(r => {
           const rowClass = r.accent ? 'row-label accent' : 'row-label';
           const timeClass = r.accent ? 'row-time accent' : 'row-time';
+          // A quiet "time rail" separates the time column from the zman label
+          // so the eye can track each number to the correct row at a glance.
+          body += `<line x1="${x + 60}" x2="${x + 60}" y1="${y + 1}" y2="${y + rowH - 1}" class="time-rail"/>`;
+          body += `<line x1="${x + 60}" x2="${x + colW}" y1="${y + rowH - .5}" y2="${y + rowH - .5}" class="row-guide"/>`;
           if (/[֐-׿]/.test(r.label)) {
             body += rtlText(x + colW - 2, y + 10, r.label, rowClass, 'end');
           } else {
@@ -354,14 +358,16 @@
         .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif}
         .title{font-size:25px;font-weight:700;fill:#ffffff}
         .subtitle{font-family:Arial,sans-serif;font-size:8.6px;letter-spacing:1px;fill:#d5c08a}
-        .section-title{font-size:11.2px;font-weight:700;fill:#263250}
-        .section-date{font-family:Arial,sans-serif;font-size:7.6px;letter-spacing:.25px;fill:#7f8a98}
-        .row-label{font-size:8.9px;font-weight:500;fill:#2b3445}
-        .row-label-ltr{font-family:Arial,sans-serif;font-size:8.9px;font-weight:500;fill:#2b3445}
-        .row-time{font-family:Arial,sans-serif;font-size:8.9px;font-weight:700;fill:#263250}
+        .section-title{font-size:10.4px;font-weight:700;fill:#263250}
+        .section-date{font-family:Arial,sans-serif;font-size:7.4px;letter-spacing:.25px;fill:#7f8a98}
+        .row-label{font-size:8.1px;font-weight:500;fill:#2b3445}
+        .row-label-ltr{font-family:Arial,sans-serif;font-size:8.1px;font-weight:500;fill:#2b3445}
+        .row-time{font-family:Arial,sans-serif;font-size:9.4px;font-weight:700;fill:#263250}
         .accent{fill:#9a7a34;font-weight:700}
         .gold-rule{stroke:#c7a55a;stroke-width:.8}
         .column-rule{stroke:#d8dde2;stroke-width:.55}
+        .time-rail{stroke:#c7a55a;stroke-width:.5;opacity:.75}
+        .row-guide{stroke:#dfe3e8;stroke-width:.45}
       </style>
       ${rtlText(425, 82, 'סוכות תשפ״ז', 'title', 'middle')}
       ${text(425, 102, 'SUCCOS SCHEDULE  •  5787 / 2026', 'subtitle', 'middle')}

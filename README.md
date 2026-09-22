@@ -10,7 +10,7 @@ Replace the fragile Affinity Data Merge workflow with a small web app that selec
 
 The first build establishes the production UI, live KZY API import, editable schedule rows, RTL Hebrew preview, and `KZY-Weekly-Zmanim.svg` export.
 
-Astronomical `AUTO` rows are intentionally **not yet calculated**. They remain visibly marked until the KosherJava-compatible calculation layer is implemented and validated against the official KosherJava map. This avoids silently shipping approximate zmanim.
+The KosherZmanim/KosherJava-compatible calculation layer is active and calibrated for KZY's saved location. A Succos 5787 planner now calculates Sep 25–Oct 4, 2026 from the same engine, using the 2025 schedule as the program master and 2023 only for Friday/Shabbos/Sunday configuration overrides. Every holiday row shows whether it is a direct astronomical value, an established offset rule, or a fixed shul/program time, and remains manually overrideable.
 
 ## Data sources
 

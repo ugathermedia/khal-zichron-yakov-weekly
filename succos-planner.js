@@ -230,6 +230,142 @@
     }).join('\n\n');
   }
 
+
+  function succosRow(day, key) {
+    return day?.rows?.find(r => r.id === `${day.key}:${key}`) || null;
+  }
+
+  function flyerTime(day, key) {
+    return succosRow(day, key)?.time || '';
+  }
+
+  function flyerSection(day, title = day.hebrew, subtitle = day.english) {
+    return {
+      title,
+      subtitle,
+      rows: day.rows.map(r => ({ label: r.label, time: r.time || '' }))
+    };
+  }
+
+  function buildAffinityColumns(days) {
+    const byKey = Object.fromEntries(days.map(d => [d.key, d]));
+    const mon = byKey['ch-mon'];
+    const tue = byKey['ch-tue'];
+    const wed = byKey['ch-wed'];
+    const thu = byKey['ch-thu'];
+
+    const cholHamoed = {
+      title: 'חול המועד',
+      subtitle: 'Mon–Thu 9/28–10/1',
+      rows: [
+        { label: 'שחרית', time: flyerTime(mon, 'shacharis') },
+        { label: 'מנחה מוקדמת', time: flyerTime(mon, 'mincha-early') },
+        { label: 'מנחה מאוחרת — Monday', time: flyerTime(mon, 'mincha-late') },
+        { label: 'מנחה מאוחרת — Tues–Thurs', time: flyerTime(tue, 'mincha-late') },
+        { label: 'מעריב', time: flyerTime(mon, 'maariv') }
+      ]
+    };
+
+    const hoshanaNight = {
+      title: 'ליל הושענא רבה',
+      subtitle: 'Thursday 10/1',
+      rows: [
+        { label: 'סדר לימוד לכבוד הושענא רבה', time: flyerTime(thu, 'seder') },
+        { label: 'דברי תורה והתעוררות', time: flyerTime(thu, 'divrei') },
+        { label: 'ALL-NIGHT SEDER', time: '' }
+      ]
+    };
+
+    return [
+      [
+        flyerSection(byKey['erev-sukkos']),
+        flyerSection(byKey['day1']),
+        flyerSection(byKey['day2'])
+      ],
+      [
+        cholHamoed,
+        hoshanaNight,
+        flyerSection(byKey['hr'])
+      ],
+      [
+        flyerSection(byKey['shemini']),
+        flyerSection(byKey['st'])
+      ]
+    ];
+  }
+
+  function buildSuccosAffinitySVG(days) {
+    const W = 612;
+    const H = 792;
+    const margin = 26;
+    const gap = 12;
+    const colW = (W - margin * 2 - gap * 2) / 3;
+    const topY = 78;
+    const bottomY = 755;
+    const rowH = 17;
+    const headH = 23;
+    const sectionGap = 8;
+    const columns = buildAffinityColumns(days);
+
+    const text = (x, y, value, cls, anchor = 'start') =>
+      `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${esc(value || '')}</text>`;
+
+    let body = '';
+    columns.forEach((sections, col) => {
+      const x = margin + col * (colW + gap);
+      let y = topY;
+
+      sections.forEach((section, sectionIndex) => {
+        if (sectionIndex) y += sectionGap;
+        body += `<rect x="${x}" y="${y}" width="${colW}" height="${headH}" rx="2" class="section-bg"/>`;
+        body += text(x + colW - 7, y + 15, section.title, 'section-title', 'end');
+        body += text(x + 7, y + 15, section.subtitle, 'section-date', 'start');
+        y += headH;
+
+        section.rows.forEach(r => {
+          body += `<line x1="${x}" x2="${x + colW}" y1="${y + rowH}" y2="${y + rowH}" class="rule"/>`;
+          body += text(x + colW - 7, y + 12, r.label, 'row-label', 'end');
+          if (r.time) body += text(x + 7, y + 12, r.time.replaceAll(' · ', ', '), 'row-time', 'start');
+          y += rowH;
+        });
+      });
+
+      body += `<line x1="${x}" x2="${x + colW}" y1="${bottomY}" y2="${bottomY}" class="column-end"/>`;
+    });
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="8.5in" height="11in" viewBox="0 0 ${W} ${H}">
+      <style>
+        .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:plaintext}
+        .title{font-size:25px;font-weight:700;fill:#18263e}
+        .subtitle{font-family:Arial,sans-serif;font-size:9px;letter-spacing:.6px;fill:#6c7480}
+        .section-bg{fill:#18263e}
+        .section-title{font-size:10.4px;font-weight:700;fill:#fff}
+        .section-date{font-family:Arial,sans-serif;font-size:7.4px;fill:#dfe6f0}
+        .row-label{font-size:8.8px;font-weight:600;fill:#1e293b}
+        .row-time{font-family:Arial,sans-serif;font-size:8.8px;font-weight:700;fill:#111827}
+        .rule{stroke:#d9dde3;stroke-width:.6}
+        .column-end{stroke:#18263e;stroke-width:1}
+        .footer{font-family:Arial,sans-serif;font-size:7.2px;fill:#5f6875}
+      </style>
+      <rect width="${W}" height="${H}" fill="#fff"/>
+      ${text(W / 2, 36, 'סוכות תשפ״ז', 'title', 'middle')}
+      ${text(W / 2, 54, 'KHAL ZICHRON YAKOV  •  SEPTEMBER 25 – OCTOBER 4, 2026', 'subtitle', 'middle')}
+      <line x1="${margin}" x2="${W - margin}" y1="65" y2="65" stroke="#18263e" stroke-width="1.2"/>
+      ${body}
+      ${text(W / 2, 777, 'Khal Zichron Yakov  •  8 Roxbury Court  •  Chestnut Ridge, NY 10977', 'footer', 'middle')}
+    </svg>`;
+  }
+
+  function downloadSuccosAffinitySVG(days) {
+    const svg = buildSuccosAffinitySVG(days);
+    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'KZY-Succos-5787-One-Page.svg';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
   function injectUI() {
     if (document.getElementById('succosPlannerCard')) return;
     const card = document.createElement('details');
@@ -270,7 +406,7 @@
             <div class="sp-note">2025 is the schedule master. 2023 is used only where the Friday/Shabbos/Sunday configuration changes the program. Every astronomical value comes from the same KosherZmanim 0.9.0 / KosherJava calculation layer used by this app, at KZY's saved coordinates and sea-level shkiah. Offsets are applied to the exact instant before display rounding.</div>
           </div>
           <div>
-            <button type="button" id="succosCopy">Copy schedule</button>
+            <button type="button" id="succosCopy">Copy schedule</button>\n            <button type="button" id="succosAffinity">Export one-page Affinity SVG</button>
             <button type="button" id="succosReset">Reset Succos overrides</button>
           </div>
         </div>
@@ -335,6 +471,8 @@
         window.prompt('Copy Succos schedule:', text);
       }
     };
+
+    document.getElementById('succosAffinity').onclick = () => downloadSuccosAffinitySVG(days);
 
     document.getElementById('succosReset').onclick = () => {
       localStorage.removeItem(OVERRIDE_KEY);

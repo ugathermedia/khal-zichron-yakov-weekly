@@ -352,7 +352,7 @@
     const rowH = 13.8;
     const headH = 21;
     const sectionGap = 6;
-    const timeColW = 105;
+    const timeColW = 118;
     const columns = buildAffinityColumns(days);
 
     const text = (x, y, value, cls, anchor = 'start') =>
@@ -384,8 +384,10 @@
           // Keep the leader deliberately short and in a dedicated gutter.
           // Affinity's Hebrew metrics differ from browser SVG metrics, so a
           // long calculated leader can run underneath wide Hebrew labels.
-          const leaderStart = x + timeColW + 7;
-          const leaderEnd = leaderStart + (r.accent ? 18 : 28);
+          // Times use a fixed left edge. The leader begins only after the
+          // reserved time column, so short and long time strings all line up.
+          const leaderStart = x + timeColW + 6;
+          const leaderEnd = x + colW - (r.accent ? 142 : 78);
           if (r.time) {
             body += `<line x1="${leaderStart}" x2="${leaderEnd}" y1="${y + 8.3}" y2="${y + 8.3}" class="row-leader"/>`;
           }
@@ -395,7 +397,7 @@
           } else {
             body += text(x + colW - 2, y + 10.5, r.label, r.accent ? 'row-label-ltr accent' : 'row-label-ltr', 'end');
           }
-          if (r.time) body += text(x + timeColW - 4, y + 10.5, affinityTimeText(r.time), timeClass, 'end');
+          if (r.time) body += text(x + 2, y + 10.5, affinityTimeText(r.time), timeClass, 'start');
           y += rowH;
         });
       });

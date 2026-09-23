@@ -352,13 +352,13 @@
     const rowH = 13.8;
     const headH = 21;
     const sectionGap = 6;
-    const timeColW = 118;
+    const timeColW = 122;
     const columns = buildAffinityColumns(days);
 
     const text = (x, y, value, cls, anchor = 'start') =>
       `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${esc(value || '')}</text>`;
-    const rtlText = (x, y, value, cls, anchor = 'end') =>
-      text(x, y, affinityVisualRtl(value), cls, anchor);
+    const rtlText = (x, y, value, cls, anchor = 'end', size = 6.2, weight = 500) =>
+      `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}" font-family="Arial, Noto Sans Hebrew, sans-serif" font-size="${size}" font-weight="${weight}">${esc(affinityVisualRtl(value))}</text>`;
     const affinityTimeText = value =>
       String(value || '')
         .replaceAll(' · ', ', ')
@@ -374,7 +374,7 @@
         if (sectionIndex) y += sectionGap;
 
         body += text(x + 2, y + 12, section.subtitle, 'section-date', 'start');
-        body += rtlText(x + colW - 2, y + 12, section.title, 'section-title', 'end');
+        body += rtlText(x + colW - 2, y + 12, section.title, 'section-title', 'end', 8.2, 700);
         body += `<line x1="${x}" x2="${x + colW}" y1="${y + 18}" y2="${y + 18}" class="gold-rule"/>`;
         y += headH;
 
@@ -386,14 +386,14 @@
           // long calculated leader can run underneath wide Hebrew labels.
           // Times use a fixed left edge. The leader begins only after the
           // reserved time column, so short and long time strings all line up.
-          const leaderStart = x + timeColW + 6;
-          const leaderEnd = x + colW - (r.accent ? 142 : 78);
+          const leaderStart = x + timeColW + 4;
+          const leaderEnd = leaderStart + 20;
           if (r.time) {
             body += `<line x1="${leaderStart}" x2="${leaderEnd}" y1="${y + 8.3}" y2="${y + 8.3}" class="row-leader"/>`;
           }
 
           if (/[֐-׿]/.test(r.label)) {
-            body += rtlText(x + colW - 2, y + 10.5, r.label, rowClass, 'end');
+            body += rtlText(x + colW - 2, y + 10.5, r.label, rowClass, 'end', r.accent ? 6.0 : 5.8, r.accent ? 650 : 500);
           } else {
             body += text(x + colW - 2, y + 10.5, r.label, r.accent ? 'row-label-ltr accent' : 'row-label-ltr', 'end');
           }
@@ -408,17 +408,17 @@
         .title,.section-title,.row-label{font-family:Assistant,'Noto Sans Hebrew',Arial,sans-serif}
         .title{font-size:25px;font-weight:700;fill:#ffffff}
         .subtitle{font-family:Arial,sans-serif;font-size:8.6px;letter-spacing:1px;fill:#d5c08a}
-        .section-title{font-size:8.6px;font-weight:650;fill:#263250}
+        .section-title{fill:#263250}
         .section-date{font-family:Arial,sans-serif;font-size:7.3px;letter-spacing:.25px;fill:#7f8a98}
-        .row-label{font-size:6.35px;font-weight:500;fill:#394354}
-        .row-label-ltr{font-family:Arial,sans-serif;font-size:6.35px;font-weight:500;fill:#394354}
+        .row-label{fill:#394354}
+        .row-label-ltr{font-family:Arial,sans-serif;font-size:6.4px;font-weight:500;fill:#394354}
         .row-time{font-family:Arial,sans-serif;font-size:11.5px;font-weight:700;fill:#263250}
         .accent{fill:#9a7a34;font-weight:650}
         .gold-rule{stroke:#c7a55a;stroke-width:.8}
         .column-rule{stroke:#d8dde2;stroke-width:.5}
         .row-leader{stroke:#c7a55a;stroke-width:.55;opacity:.7}
       </style>
-      ${rtlText(425, 82, 'סוכות תשפ״ז', 'title', 'middle')}
+      ${rtlText(425, 82, 'סוכות תשפ״ז', 'title', 'middle', 25, 700)}
       ${text(425, 102, 'SUCCOS SCHEDULE  •  5787 / 2026', 'subtitle', 'middle')}
       <line x1="${W / 2}" x2="${W / 2}" y1="${topY}" y2="710" class="column-rule"/>
       ${body}

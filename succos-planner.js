@@ -312,15 +312,20 @@
     const gap = 20;
     const colW = (W - margin * 2 - gap) / 2;
     const topY = 174;
-    const rowH = 14;
+    const rowH = 14.5;
     const headH = 21;
-    const sectionGap = 6;
+    const sectionGap = 7;
+    const timeColW = 96;
     const columns = buildAffinityColumns(days);
 
     const text = (x, y, value, cls, anchor = 'start') =>
       `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${esc(value || '')}</text>`;
     const rtlText = (x, y, value, cls, anchor = 'end') =>
       text(x, y, affinityVisualRtl(value), cls, anchor);
+    const affinityTimeText = value =>
+      String(value || '')
+        .replaceAll(' · ', ', ')
+        .replaceAll('שקיעה', 'העיקש');
 
     let body = '';
     columns.forEach((sections, col) => {
@@ -339,16 +344,20 @@
         section.rows.forEach(r => {
           const rowClass = r.accent ? 'row-label accent' : 'row-label';
           const timeClass = r.accent ? 'row-time accent' : 'row-time';
-          // A quiet "time rail" separates the time column from the zman label
-          // so the eye can track each number to the correct row at a glance.
-          body += `<line x1="${x + 60}" x2="${x + 60}" y1="${y + 1}" y2="${y + rowH - 1}" class="time-rail"/>`;
-          body += `<line x1="${x + 60}" x2="${x + colW}" y1="${y + rowH - .5}" y2="${y + rowH - .5}" class="row-guide"/>`;
+          const railX = x + timeColW;
+
+          // Clean editorial pairing: times align into the rail from the left,
+          // Hebrew labels align from the right, and a tiny gold node marks
+          // the shared baseline. No horizontal rules run through the numbers.
+          body += `<line x1="${railX}" x2="${railX}" y1="${y}" y2="${y + rowH}" class="time-rail"/>`;
+          body += `<circle cx="${railX}" cy="${y + 8.5}" r="1.15" class="time-node"/>`;
+
           if (/[֐-׿]/.test(r.label)) {
-            body += rtlText(x + colW - 2, y + 10, r.label, rowClass, 'end');
+            body += rtlText(x + colW - 2, y + 10.5, r.label, rowClass, 'end');
           } else {
-            body += text(x + colW - 2, y + 10, r.label, r.accent ? 'row-label-ltr accent' : 'row-label-ltr', 'end');
+            body += text(x + colW - 2, y + 10.5, r.label, r.accent ? 'row-label-ltr accent' : 'row-label-ltr', 'end');
           }
-          if (r.time) body += text(x + 2, y + 10, r.time.replaceAll(' · ', ', '), timeClass, 'start');
+          if (r.time) body += text(railX - 8, y + 10.5, affinityTimeText(r.time), timeClass, 'end');
           y += rowH;
         });
       });
@@ -356,19 +365,19 @@
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="8.5in" height="11in" viewBox="0 0 ${W} ${H}">
       <style>
-        .title,.section-title,.row-label{font-family:Arial,'Noto Sans Hebrew',sans-serif}
+        .title,.section-title,.row-label{font-family:Assistant,'Noto Sans Hebrew',Arial,sans-serif}
         .title{font-size:25px;font-weight:700;fill:#ffffff}
         .subtitle{font-family:Arial,sans-serif;font-size:8.6px;letter-spacing:1px;fill:#d5c08a}
-        .section-title{font-size:10.4px;font-weight:700;fill:#263250}
-        .section-date{font-family:Arial,sans-serif;font-size:7.4px;letter-spacing:.25px;fill:#7f8a98}
-        .row-label{font-size:8.1px;font-weight:500;fill:#2b3445}
-        .row-label-ltr{font-family:Arial,sans-serif;font-size:8.1px;font-weight:500;fill:#2b3445}
-        .row-time{font-family:Arial,sans-serif;font-size:9.4px;font-weight:700;fill:#263250}
-        .accent{fill:#9a7a34;font-weight:700}
+        .section-title{font-size:9.6px;font-weight:650;fill:#263250}
+        .section-date{font-family:Arial,sans-serif;font-size:7.3px;letter-spacing:.25px;fill:#7f8a98}
+        .row-label{font-size:7.35px;font-weight:500;fill:#394354}
+        .row-label-ltr{font-family:Arial,sans-serif;font-size:7.35px;font-weight:500;fill:#394354}
+        .row-time{font-family:Arial,sans-serif;font-size:9.6px;font-weight:700;fill:#263250}
+        .accent{fill:#9a7a34;font-weight:650}
         .gold-rule{stroke:#c7a55a;stroke-width:.8}
-        .column-rule{stroke:#d8dde2;stroke-width:.55}
-        .time-rail{stroke:#c7a55a;stroke-width:.5;opacity:.75}
-        .row-guide{stroke:#dfe3e8;stroke-width:.45}
+        .column-rule{stroke:#d8dde2;stroke-width:.5}
+        .time-rail{stroke:#c7a55a;stroke-width:.55;opacity:.52}
+        .time-node{fill:#c7a55a;opacity:.9}
       </style>
       ${rtlText(425, 82, 'סוכות תשפ״ז', 'title', 'middle')}
       ${text(425, 102, 'SUCCOS SCHEDULE  •  5787 / 2026', 'subtitle', 'middle')}

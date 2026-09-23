@@ -34,6 +34,15 @@
     return clockFromLocalMinutes(Math.floor((p.h * 60 + p.m) / 5) * 5);
   }
 
+  function roundedCholHamoedMincha(sunset) {
+    // Chol Hamoed has its own Yom-Tov schedule precedent; do not borrow
+    // the ordinary post-Yom-Tov weekday planner rule. 2025 CH late Mincha
+    // tracked about 15 minutes before shkiah (6:10 Thu, 6:05 Sun), and 2023
+    // shows the same general relationship. Apply that relationship to the
+    // current year's exact shkiah, then round to the nearest :05.
+    return roundedOffset(sunset, -15);
+  }
+
   function roundedOffset(value, minutes, step = 5) {
     if (!value) return '';
     const shifted = new Date(new Date(value).getTime() + minutes * 60000);
@@ -131,7 +140,7 @@
       rows = [
         fixed('shacharis', 'שחרית', '6:45 · 8:10 · 8:45', '2025 master'),
         fixed('mincha-early', 'מנחה מוקדמת', '1:45', '2025 master'),
-        row(def.key, 'mincha-late', 'מנחה מאוחרת', roundedWeekdayMincha(sunset), 'Current GitHub weekday rule: minimum 13 min before exact shkiah, rounded down to prior :05', 'rule'),
+        row(def.key, 'mincha-late', 'מנחה מאוחרת', roundedCholHamoedMincha(sunset), 'Chol Hamoed precedent: approximately 15 min before exact shkiah, rounded to nearest :05; separate from the post-Yom-Tov weekday rule', 'rule'),
         fixed('maariv', 'מעריב', 'שקיעה · 8:15 · 9:45', '2025 master'),
         ...(def.hoshanaNight ? [
           fixed('seder', 'סדר לימוד לכבוד הושענא רבה', '10:00', '2025 master'),

@@ -352,7 +352,7 @@
     const rowH = 13.8;
     const headH = 21;
     const sectionGap = 6;
-    const timeColW = 118;
+    const timeColW = 105;
     const columns = buildAffinityColumns(days);
 
     const text = (x, y, value, cls, anchor = 'start') =>
@@ -381,13 +381,12 @@
         section.rows.forEach(r => {
           const rowClass = r.accent ? 'row-label accent' : 'row-label';
           const timeClass = r.accent ? 'row-time accent' : 'row-time';
-          const leaderStart = x + timeColW + 4;
-          const leaderEnd = x + colW - (r.accent ? 132 : 72);
-
-          // Horizontal leader connects the time to its zman without crossing
-          // through either text block. Special long program labels get a
-          // shorter leader so the line never runs underneath the Hebrew.
-          if (r.time && leaderEnd > leaderStart + 8) {
+          // Keep the leader deliberately short and in a dedicated gutter.
+          // Affinity's Hebrew metrics differ from browser SVG metrics, so a
+          // long calculated leader can run underneath wide Hebrew labels.
+          const leaderStart = x + timeColW + 7;
+          const leaderEnd = leaderStart + (r.accent ? 18 : 28);
+          if (r.time) {
             body += `<line x1="${leaderStart}" x2="${leaderEnd}" y1="${y + 8.3}" y2="${y + 8.3}" class="row-leader"/>`;
           }
 
@@ -407,11 +406,11 @@
         .title,.section-title,.row-label{font-family:Assistant,'Noto Sans Hebrew',Arial,sans-serif}
         .title{font-size:25px;font-weight:700;fill:#ffffff}
         .subtitle{font-family:Arial,sans-serif;font-size:8.6px;letter-spacing:1px;fill:#d5c08a}
-        .section-title{font-size:9.6px;font-weight:650;fill:#263250}
+        .section-title{font-size:8.6px;font-weight:650;fill:#263250}
         .section-date{font-family:Arial,sans-serif;font-size:7.3px;letter-spacing:.25px;fill:#7f8a98}
-        .row-label{font-size:7.35px;font-weight:500;fill:#394354}
-        .row-label-ltr{font-family:Arial,sans-serif;font-size:7.35px;font-weight:500;fill:#394354}
-        .row-time{font-family:Arial,sans-serif;font-size:12px;font-weight:700;fill:#263250}
+        .row-label{font-size:6.35px;font-weight:500;fill:#394354}
+        .row-label-ltr{font-family:Arial,sans-serif;font-size:6.35px;font-weight:500;fill:#394354}
+        .row-time{font-family:Arial,sans-serif;font-size:11.5px;font-weight:700;fill:#263250}
         .accent{fill:#9a7a34;font-weight:650}
         .gold-rule{stroke:#c7a55a;stroke-width:.8}
         .column-rule{stroke:#d8dde2;stroke-width:.5}

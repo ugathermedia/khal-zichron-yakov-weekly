@@ -104,8 +104,8 @@
       rows = [
         fixed('shacharis', 'שחרית', '8:30', '2023 Shabbos override'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
-        shifted('tiferes', 'תפארת בחורים', sunset, -75, '2023 Shabbos precedent: 75 min before shkiah'),
-        shifted('mincha', 'מנחה', sunset, -25, '2023 Shabbos precedent: 25 min before shkiah'),
+        row(def.key, 'tiferes', 'תפארת בחורים', roundedOffset(sunset, -75), '2023 Shabbos precedent: 75 min before shkiah; rounded to nearest :05', 'rule'),
+        row(def.key, 'mincha', 'מנחה', roundedOffset(sunset, -25), '2023 Shabbos precedent: 25 min before shkiah; Shabbos afternoon rounded to nearest :05', 'rule'),
         textRow(def.key, 'shiur', 'שיעור מאת הרב שליט״א', '2023 Shabbos override; untimed'),
         exact('shkiah', 'שקיעה', sunset),
         exact('maariv', 'מעריב', tzais50, '2023 Motzei Shabbos precedent: Maariv at exact shkiah + 50 minutes'),
@@ -118,8 +118,8 @@
       rows = [
         fixed('shacharis', 'שחרית', '8:30', '2023 Sunday-after-Shabbos override'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
-        shifted('tiferes', 'תפארת בחורים', sunset, -74, '2023 Sunday precedent: 74 min before shkiah'),
-        shifted('mincha', 'מנחה', sunset, -24, '2023 Sunday precedent: 24 min before shkiah'),
+        row(def.key, 'tiferes', 'תפארת בחורים', roundedOffset(sunset, -74), '2023 Sunday precedent: 74 min before shkiah; rounded to nearest :05', 'rule'),
+        row(def.key, 'mincha', 'מנחה', roundedOffset(sunset, -24), '2023 Sunday precedent: 24 min before shkiah; Yom Tov afternoon rounded to nearest :05', 'rule'),
         textRow(def.key, 'shiur', 'שיעור בעניני דיומא', '2023 matching Sunday configuration; untimed'),
         exact('shkiah', 'שקיעה', sunset),
         shifted('maariv', 'מעריב', sunset, 55, '2023 + 2025 Day 2 rule: 55 min after shkiah'),
@@ -159,10 +159,10 @@
         fixed('shacharis', 'שחרית', '8:30', '2023 Shabbos override'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
         fixed('yizkor', 'יזכור', 'Not before 10:45', '2025 master; 2023 used older 10:05 rule'),
-        shifted('tiferes', 'תפארת בחורים', sunset, -99, '2023 Shabbos precedent: 99 min before shkiah'),
-        shifted('shiur', 'שיעור בעניני דיומא', sunset, -74, '2023 Shabbos precedent: 74 min before shkiah'),
-        shifted('farewell', 'תפילה לפרידה מן הסוכה', sunset, -44, '2023 Shabbos precedent: 44 min before shkiah'),
-        shifted('mincha', 'מנחה', sunset, -24, '2023 Shabbos precedent: 24 min before shkiah'),
+        row(def.key, 'tiferes', 'תפארת בחורים', roundedOffset(sunset, -99), '2023 Shabbos precedent: 99 min before shkiah; rounded to nearest :05', 'rule'),
+        row(def.key, 'shiur', 'שיעור בעניני דיומא', roundedOffset(sunset, -74), '2023 Shabbos precedent: 74 min before shkiah; rounded to nearest :05', 'rule'),
+        row(def.key, 'farewell', 'תפילה לפרידה מן הסוכה', roundedOffset(sunset, -44), '2023 Shabbos precedent: 44 min before shkiah; rounded to nearest :05', 'rule'),
+        row(def.key, 'mincha', 'מנחה', roundedOffset(sunset, -24), '2023 Shabbos precedent: 24 min before shkiah; Shabbos afternoon rounded to nearest :05', 'rule'),
         exact('shkiah', 'שקיעה', sunset),
         exact('maariv', 'מעריב', tzais50, '2023 Motzei Shabbos precedent: Maariv at exact shkiah + 50 minutes'),
         exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos: candle lighting waits for the 72-minute zman')
@@ -177,7 +177,7 @@
       rows = [
         fixed('shacharis', 'שחרית', '8:15', '2025 + 2023'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
-        shifted('mincha', 'מנחה', sunset, minchaOffset, minchaBasis),
+        row(def.key, 'mincha', 'מנחה', roundedOffset(sunset, minchaOffset), minchaBasis + '; Yom Tov afternoon rounded to nearest :05', 'rule'),
         textRow(def.key, 'neila', 'נעילת החג', '2025 + 2023'),
         exact('shkiah', 'שקיעה', sunset),
         shifted('maariv', 'מעריב', sunset, 55, '2025 + 2023: 55 min after shkiah'),
@@ -324,7 +324,8 @@
 
     let body = '';
     columns.forEach((sections, col) => {
-      // Hebrew reading order: the first/earlier-day column is on the RIGHT.\n      const x = W - margin - colW - col * (colW + gap);
+      // Hebrew reading order: the first/earlier-day column is on the RIGHT.
+      const x = W - margin - colW - col * (colW + gap);
       let y = topY;
 
       sections.forEach((section, sectionIndex) => {
@@ -379,11 +380,15 @@
   function downloadSuccosAffinitySVG(days) {
     const svg = buildSuccosAffinitySVG(days);
     const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = 'KZY-Succos-5787-One-Page.svg';
+    a.style.display = 'none';
+    document.body.appendChild(a);
     a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
   }
 
   function injectUI() {
@@ -493,7 +498,17 @@
       }
     };
 
-    document.getElementById('succosAffinity').onclick = () => downloadSuccosAffinitySVG(days);
+    const affinityButton = document.getElementById('succosAffinity');
+    affinityButton.onclick = () => {
+      try {
+        downloadSuccosAffinitySVG(days);
+        affinityButton.textContent = 'Exported';
+        setTimeout(() => { affinityButton.textContent = 'Export editorial Affinity SVG'; }, 1200);
+      } catch (e) {
+        console.error('Succos Affinity export failed', e);
+        affinityButton.textContent = 'Export failed — retry';
+      }
+    };
 
     document.getElementById('succosReset').onclick = () => {
       localStorage.removeItem(OVERRIDE_KEY);

@@ -324,7 +324,7 @@
     const rowH = 14.5;
     const headH = 21;
     const sectionGap = 7;
-    const timeColW = 96;
+    const timeColW = 118;
     const columns = buildAffinityColumns(days);
 
     const text = (x, y, value, cls, anchor = 'start') =>
@@ -381,7 +381,7 @@
         .section-date{font-family:Arial,sans-serif;font-size:7.3px;letter-spacing:.25px;fill:#7f8a98}
         .row-label{font-size:7.35px;font-weight:500;fill:#394354}
         .row-label-ltr{font-family:Arial,sans-serif;font-size:7.35px;font-weight:500;fill:#394354}
-        .row-time{font-family:Arial,sans-serif;font-size:9.6px;font-weight:700;fill:#263250}
+        .row-time{font-family:Arial,sans-serif;font-size:12px;font-weight:700;fill:#263250}
         .accent{fill:#9a7a34;font-weight:650}
         .gold-rule{stroke:#c7a55a;stroke-width:.8}
         .column-rule{stroke:#d8dde2;stroke-width:.5}

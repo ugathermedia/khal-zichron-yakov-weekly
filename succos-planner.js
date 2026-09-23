@@ -273,6 +273,33 @@
       ]
     };
 
+    const remainderDates = [
+      ['Mon', '2026-10-05'],
+      ['Tue', '2026-10-06'],
+      ['Wed', '2026-10-07'],
+      ['Thu', '2026-10-08']
+    ];
+    const remainderGroups = [];
+    remainderDates.forEach(([day, iso]) => {
+      const late = roundedWeekdayMincha(zmanimFor(iso).SeaLevelSunset);
+      const last = remainderGroups[remainderGroups.length - 1];
+      if (last && last.time === late) last.days.push(day);
+      else remainderGroups.push({ days:[day], time:late });
+    });
+    const dayRange = days => days.length === 1 ? days[0] : `${days[0]}–${days[days.length - 1]}`;
+    const remainderWeek = {
+      title: 'יתרת השבוע',
+      subtitle: 'Mon–Thu 10/5–10/8',
+      rows: [
+        { label: 'שחרית', time: '6:45, 7:35, 8:45' },
+        ...remainderGroups.map(g => ({
+          label: `מנחה — ${dayRange(g.days)}`,
+          time: `1:45, ${g.time}`
+        })),
+        { label: 'מעריב', time: 'שקיעה, 8:15, 9:45' }
+      ]
+    };
+
     const hoshanaNightDay = {
       title: 'חול המועד / ליל הושענא רבה',
       subtitle: 'Thursday 10/1',
@@ -297,7 +324,8 @@
         hoshanaNightDay,
         flyerSection(byKey['hr']),
         flyerSection(byKey['shemini']),
-        flyerSection(byKey['st'])
+        flyerSection(byKey['st']),
+        remainderWeek
       ]
     ];
   }
@@ -321,9 +349,9 @@
     const gap = 20;
     const colW = (W - margin * 2 - gap) / 2;
     const topY = 174;
-    const rowH = 14.5;
+    const rowH = 13.8;
     const headH = 21;
-    const sectionGap = 7;
+    const sectionGap = 6;
     const timeColW = 118;
     const columns = buildAffinityColumns(days);
 
@@ -353,20 +381,22 @@
         section.rows.forEach(r => {
           const rowClass = r.accent ? 'row-label accent' : 'row-label';
           const timeClass = r.accent ? 'row-time accent' : 'row-time';
-          const railX = x + timeColW;
+          const leaderStart = x + timeColW + 4;
+          const leaderEnd = x + colW - (r.accent ? 132 : 72);
 
-          // Clean editorial pairing: times align into the rail from the left,
-          // Hebrew labels align from the right, and a tiny gold node marks
-          // the shared baseline. No horizontal rules run through the numbers.
-          body += `<line x1="${railX}" x2="${railX}" y1="${y}" y2="${y + rowH}" class="time-rail"/>`;
-          body += `<circle cx="${railX}" cy="${y + 8.5}" r="1.15" class="time-node"/>`;
+          // Horizontal leader connects the time to its zman without crossing
+          // through either text block. Special long program labels get a
+          // shorter leader so the line never runs underneath the Hebrew.
+          if (r.time && leaderEnd > leaderStart + 8) {
+            body += `<line x1="${leaderStart}" x2="${leaderEnd}" y1="${y + 8.3}" y2="${y + 8.3}" class="row-leader"/>`;
+          }
 
           if (/[֐-׿]/.test(r.label)) {
             body += rtlText(x + colW - 2, y + 10.5, r.label, rowClass, 'end');
           } else {
             body += text(x + colW - 2, y + 10.5, r.label, r.accent ? 'row-label-ltr accent' : 'row-label-ltr', 'end');
           }
-          if (r.time) body += text(railX - 8, y + 10.5, affinityTimeText(r.time), timeClass, 'end');
+          if (r.time) body += text(x + timeColW - 4, y + 10.5, affinityTimeText(r.time), timeClass, 'end');
           y += rowH;
         });
       });
@@ -385,8 +415,7 @@
         .accent{fill:#9a7a34;font-weight:650}
         .gold-rule{stroke:#c7a55a;stroke-width:.8}
         .column-rule{stroke:#d8dde2;stroke-width:.5}
-        .time-rail{stroke:#c7a55a;stroke-width:.55;opacity:.52}
-        .time-node{fill:#c7a55a;opacity:.9}
+        .row-leader{stroke:#c7a55a;stroke-width:.55;opacity:.7}
       </style>
       ${rtlText(425, 82, 'סוכות תשפ״ז', 'title', 'middle')}
       ${text(425, 102, 'SUCCOS SCHEDULE  •  5787 / 2026', 'subtitle', 'middle')}

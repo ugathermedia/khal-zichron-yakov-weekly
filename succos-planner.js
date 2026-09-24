@@ -101,7 +101,7 @@
 
     if (def.kind === 'erev-sukkos-friday') {
       rows = [
-        fixed('shacharis', 'שחרית', '6:45 · 7:35 · 8:45', '2025 master; same fixed Shacharis in 2023 Friday configuration'),
+        fixed('shacharis', 'שחרית', '6:45 · 7:30 · 8:45', '2025 master; same fixed Shacharis in 2023 Friday configuration'),
         shifted('candles', 'הדלקת נרות', sunset, -18, 'Astronomical: 18 min before sea-level shkiah; matches 2025 + 2023'),
         shifted('mincha', 'מנחה / קבלת שבת', sunset, -15, '2023 Friday/Shabbos precedent: 15 min before shkiah; also matches 2025'),
         textRow(def.key, 'shiur', 'שיעור מאת הרב שליט״א', '2025 master; untimed'),
@@ -296,7 +296,7 @@
       title: 'יתרת השבוע',
       subtitle: 'Mon–Thu 10/5–10/8',
       rows: [
-        { label: 'שחרית', time: '6:45, 7:35, 8:45' },
+        { label: 'שחרית', time: '6:45, 7:30, 8:45' },
         ...remainderGroups.map(g => ({
           label: `מנחה — ${dayRange(g.days)}`,
           time: `1:45, ${g.time}`

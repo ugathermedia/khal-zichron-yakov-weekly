@@ -89,6 +89,7 @@
     const ksMga72 = z.SofZmanShmaMGA72Minutes;
     const ksGra = z.SofZmanShmaGRA;
     const tzais50 = sunset ? new Date(new Date(sunset).getTime() + 50 * 60000).toISOString() : null;
+    const tzais85 = z.TzaisGeonim8Point5Degrees || z.Tzais;
     const tzais72 = z.Tzais72 || z.Tzais72Minutes;
     const plag = z.PlagHamincha || z.PlagHaminchaGRA;
 
@@ -102,7 +103,7 @@
       rows = [
         fixed('shacharis', 'שחרית', '6:45 · 7:35 · 8:45', '2025 master; same fixed Shacharis in 2023 Friday configuration'),
         shifted('candles', 'הדלקת נרות', sunset, -18, 'Astronomical: 18 min before sea-level shkiah; matches 2025 + 2023'),
-        shifted('mincha', 'מנחה', sunset, -15, '2023 Friday/Shabbos precedent: 15 min before shkiah; also matches 2025'),
+        shifted('mincha', 'מנחה / קבלת שבת', sunset, -15, '2023 Friday/Shabbos precedent: 15 min before shkiah; also matches 2025'),
         textRow(def.key, 'shiur', 'שיעור מאת הרב שליט״א', '2025 master; untimed'),
         exact('shkiah', 'שקיעה', sunset),
         shifted('maariv', 'מעריב', sunset, 40, '2023 Friday/Shabbos precedent: 40 min after shkiah')
@@ -113,13 +114,15 @@
       rows = [
         fixed('shacharis', 'שחרית', '8:30', '2023 Shabbos override'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
+        fixed('mincha-early', 'מנחה א׳', '2:30', '2026 schedule update: additional Shabbos afternoon Mincha'),
         row(def.key, 'tiferes', 'תפארת בחורים', roundedOffset(sunset, -75), '2023 Shabbos precedent: 75 min before shkiah; rounded to nearest :05', 'rule'),
-        row(def.key, 'mincha', 'מנחה', roundedOffset(sunset, -25), '2023 Shabbos precedent: 25 min before shkiah; Shabbos afternoon rounded to nearest :05', 'rule'),
+        row(def.key, 'mincha', 'מנחה ב׳', roundedOffset(sunset, -25), '2023 Shabbos precedent: 25 min before shkiah; Shabbos afternoon rounded to nearest :05', 'rule'),
         textRow(def.key, 'shiur', 'שיעור מאת הרב שליט״א', '2023 Shabbos override; untimed'),
         exact('shkiah', 'שקיעה', sunset),
         exact('maariv', 'מעריב', tzais50, '2023 Motzei Shabbos precedent: Maariv at exact shkiah + 50 minutes'),
         exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos: candle lighting waits for the 72-minute zman'),
-        fixed('simchas', 'שמחת בית השואבה', '10:00', '2023 Shabbos override; 2025 non-Shabbos time was 9:45')
+        fixed('simchas', 'שמחת בית השואבה', '10:00', '2023 Shabbos override; 2025 non-Shabbos time was 9:45'),
+        textRow(def.key, 'simchas-location', 'At the home of the Rov — 4 Manis', '2026 location update')
       ];
     }
 
@@ -152,11 +155,11 @@
 
     if (def.kind === 'hoshana-rabba-friday') {
       rows = [
-        row(def.key, 'shacharis-a', 'שחרית א׳', roundedOffset(sunrise, -45), '2025 + 2023 pattern: approximately 45 min before Haneitz, rounded to nearest :05', 'rule'),
+        fixed('shacharis-a', 'שחרית א׳', '6:15', '2026 schedule update; Haneitz remains astronomical'),
         exact('netz', 'הנץ', sunrise, 'Astronomical: sea-level sunrise'),
         fixed('shacharis-b', 'שחרית ב׳', '8:45', '2025 + 2023'),
         shifted('candles', 'הדלקת נרות', sunset, -18, 'Astronomical: 18 min before sea-level shkiah; exact pattern in 2025 + 2023'),
-        shifted('mincha', 'מנחה', sunset, -15, '2025 + 2023: 15 min before shkiah'),
+        shifted('mincha', 'מנחה / קבלת שבת', sunset, -15, '2025 + 2023: 15 min before shkiah'),
         textRow(def.key, 'drasha', 'דרשה מאת הרב שליט״א', '2023 Friday wording; untimed'),
         exact('shkiah', 'שקיעה', sunset),
         shifted('maariv', 'מעריב', sunset, 30, '2025 + 2023: 30 min after shkiah')
@@ -167,13 +170,14 @@
       rows = [
         fixed('shacharis', 'שחרית', '8:30', '2023 Shabbos override'),
         row(def.key, 'ks', 'ס״ז קריאת שמע', `${fmtRaw(ksMga72)} / ${fmtRaw(ksGra)}`, 'Astronomical: MGA fixed 72 / GRA', 'astronomical'),
-        fixed('yizkor', 'יזכור', 'Not before 10:45', '2025 master; 2023 used older 10:05 rule'),
+        fixed('yizkor', 'יזכור', 'Not before 10:50', '2026 schedule update'),
+        fixed('mincha-early', 'מנחה א׳', '2:30', '2026 schedule update: additional Shabbos afternoon Mincha'),
         row(def.key, 'tiferes', 'תפארת בחורים', roundedOffset(sunset, -99), '2023 Shabbos precedent: 99 min before shkiah; rounded to nearest :05', 'rule'),
         row(def.key, 'shiur', 'שיעור בעניני דיומא', roundedOffset(sunset, -74), '2023 Shabbos precedent: 74 min before shkiah; rounded to nearest :05', 'rule'),
-        row(def.key, 'farewell', 'תפילה לפרידה מן הסוכה', roundedOffset(sunset, -44), '2023 Shabbos precedent: 44 min before shkiah; rounded to nearest :05', 'rule'),
-        row(def.key, 'mincha', 'מנחה', roundedOffset(sunset, -24), '2023 Shabbos precedent: 24 min before shkiah; Shabbos afternoon rounded to nearest :05', 'rule'),
+        row(def.key, 'farewell', 'פרידה מן הסוכה ברוב עם', roundedOffset(sunset, -44), '2023 Shabbos precedent: 44 min before shkiah; rounded to nearest :05', 'rule'),
+        row(def.key, 'mincha', 'מנחה ב׳', roundedOffset(sunset, -24), '2023 Shabbos precedent: 24 min before shkiah; Shabbos afternoon rounded to nearest :05', 'rule'),
         exact('shkiah', 'שקיעה', sunset),
-        exact('maariv', 'מעריב', tzais50, '2023 Motzei Shabbos precedent: Maariv at exact shkiah + 50 minutes'),
+        row(def.key, 'maariv', 'מעריב', shift(tzais85, 3), '2026 rule: Tzais Geonim 8.5° plus 3 minutes for Tosefes Shabbos', 'rule'),
         exact('candles72', 'הדלקת נרות (72)', tzais72, 'Motzei Shabbos: candle lighting waits for the 72-minute zman')
       ];
     }
@@ -203,6 +207,7 @@
         ksMga72: fmtRaw(ksMga72),
         ksGra: fmtRaw(ksGra),
         tzais50: fmtRaw(tzais50),
+        tzais85: fmtRaw(tzais85),
         tzais72: fmtRaw(tzais72)
       },
       rows
@@ -487,11 +492,11 @@
         <div id="succosDays" class="sp-days"></div>
         <div class="sp-raw-wrap">
           <table class="sp-raw">
-            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>+50 min</th><th>Tzais 72</th></tr></thead>
+            <thead><tr><th>Date</th><th>Haneitz</th><th>Plag</th><th>Shkiah</th><th>KS MGA72</th><th>KS GRA</th><th>+50 min</th><th>Tzais 8.5°</th><th>Tzais 72</th></tr></thead>
             <tbody id="succosRaw"></tbody>
           </table>
         </div>
-        <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. The +50 column is a diagnostic offset from exact shkiah. On Motzei Shabbos it is used for Maariv only; candle lighting waits until +72. On non-Shabbos Yom Tov transitions, +50 remains the earlier candle-lighting option. Every schedule field remains manually overrideable.</div>
+        <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. The +50 column is retained as a diagnostic/pre-existing rule. For Shemini Atzeres on Shabbos 10/3/26, Maariv going into Simchas Torah is calculated from Tzais Geonim 8.5° plus 3 minutes for Tosefes Shabbos; candle lighting remains at the 72-minute zman. Every schedule field remains manually overrideable.</div>
       </div>`;
     const anchor = document.getElementById('weekdayPlannerCard') || document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);
@@ -521,7 +526,7 @@
       </section>`).join('');
 
     document.getElementById('succosRaw').innerHTML = days.map(day => `
-      <tr><td>${esc(day.english)}</td><td>${esc(day.raw.sunrise)}</td><td>${esc(day.raw.plag)}</td><td>${esc(day.raw.sunset)}</td><td>${esc(day.raw.ksMga72)}</td><td>${esc(day.raw.ksGra)}</td><td>${esc(day.raw.tzais50)}</td><td>${esc(day.raw.tzais72)}</td></tr>`).join('');
+      <tr><td>${esc(day.english)}</td><td>${esc(day.raw.sunrise)}</td><td>${esc(day.raw.plag)}</td><td>${esc(day.raw.sunset)}</td><td>${esc(day.raw.ksMga72)}</td><td>${esc(day.raw.ksGra)}</td><td>${esc(day.raw.tzais50)}</td><td>${esc(day.raw.tzais85)}</td><td>${esc(day.raw.tzais72)}</td></tr>`).join('');
 
     document.querySelectorAll('[data-succos-id]').forEach(input => {
       input.addEventListener('change', () => {

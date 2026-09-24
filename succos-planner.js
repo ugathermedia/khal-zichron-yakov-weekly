@@ -162,7 +162,7 @@
         shifted('mincha', 'מנחה / קבלת שבת', sunset, -15, '2025 + 2023: 15 min before shkiah'),
         textRow(def.key, 'drasha', 'דרשה מאת הרב שליט״א', '2023 Friday wording; untimed'),
         exact('shkiah', 'שקיעה', sunset),
-        shifted('maariv', 'מעריב', sunset, 30, '2025 + 2023: 30 min after shkiah')
+        fixed('maariv', 'מעריב', '7:00', '2026 explicit schedule update for Friday night into Shemini Atzeres; overrides the prior +30 min precedent')
       ];
     }
 

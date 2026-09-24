@@ -1,6 +1,6 @@
 (() => {
   const SUCCOS_YEAR = '5787 / 2026';
-  const RANGE_LABEL = 'Sep 25 – Oct 4, 2026';
+  const RANGE_LABEL = 'Sep 25 – Oct 8, 2026';
   const OVERRIDE_KEY = 'kzy-weekly:succos-5787-overrides';
 
   const isoDate = iso => new Date(`${iso}T12:00:00`);
@@ -314,7 +314,7 @@
         { label: 'מעריב', time: flyerTime(thu, 'maariv') },
         { label: 'סדר לימוד לכבוד הושענא רבה', time: flyerTime(thu, 'seder'), accent: true },
         { label: 'דברי תורה והתעוררות', time: flyerTime(thu, 'divrei'), accent: true },
-        { label: 'ALL-NIGHT LEARNING', time: '', accent: true }
+        { label: 'ALL-NIGHT SEDER', time: '', accent: true }
       ]
     };
 
@@ -354,9 +354,9 @@
     const gap = 20;
     const colW = (W - margin * 2 - gap) / 2;
     const topY = 174;
-    const rowH = 13.8;
+    const rowH = 13.5;
     const headH = 21;
-    const sectionGap = 6;
+    const sectionGap = 5;
     const timeColW = 122;
     const columns = buildAffinityColumns(days);
 

@@ -498,17 +498,18 @@
         </div>
         <div class="sp-foot">ASTRO = direct KosherZmanim output. RULE = clock time derived from an established prior-year relationship to an astronomical zman. FIXED = shul/program time carried from the selected precedent. The +50 column is retained as a diagnostic/pre-existing rule. For Shemini Atzeres on Shabbos 10/3/26, Maariv going into Simchas Torah is calculated from Tzais Geonim 8.5° plus 3 minutes for Tosefes Shabbos; candle lighting remains at the 72-minute zman. Every schedule field remains manually overrideable.</div>
       </div>`;
-    const anchor = document.getElementById('weekdayPlannerCard') || document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
-    anchor.insertAdjacentElement('afterend', card);
+    const mount = document.getElementById('holidayPlannerMount');
+    if (mount) mount.appendChild(card);
+    else {
+      const anchor = document.getElementById('weekdayPlannerCard') || document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
+      anchor.insertAdjacentElement('afterend', card);
+    }
   }
 
   function renderPlanner() {
     injectUI();
     const card = document.getElementById('succosPlannerCard');
-    const selectedFriday = state.friday ? localISO(state.friday) : '';
-    const succosWeekSelected = selectedFriday >= '2026-09-25' && selectedFriday <= '2026-10-02';
-    if (card) card.style.display = succosWeekSelected ? '' : 'none';
-    if (!succosWeekSelected) return;
+    if (card) card.style.display = '';
 
     let days;
     try {
@@ -576,6 +577,7 @@
   }
 
   injectUI();
+  window.renderSuccosPlanner = renderPlanner;
   renderPlanner();
 
   const previousRefresh = window.refresh;

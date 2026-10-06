@@ -12,6 +12,8 @@
   <script defer src="precision-fix.js"></script>
   <script defer src="schedule-modes.js?v=three-season-tabs-1"></script>
   <script defer src="weekday-planner.js?v=1"></script>
+  <script defer src="succos-planner.js?v=3"></script>
+  <script defer src="view-tabs.js?v=1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -26,7 +28,12 @@
   </header>
 
   <main>
-    <section class="controls">
+    <nav class="app-tabs" aria-label="Schedule views">
+      <button type="button" class="app-tab active" data-view-tab="weekly">Weekly schedule</button>
+      <button type="button" class="app-tab" data-view-tab="holiday">Holiday schedules</button>
+    </nav>
+
+    <section class="controls" data-app-view="weekly">
       <div class="eyebrow">WEEK</div>
       <div class="week-row">
         <button id="prev" aria-label="Previous week">←</button>
@@ -55,7 +62,7 @@
       <p class="note"><strong>Weekly production mode:</strong> choose the Friday, confirm the season/special-Shabbos settings, review weekday adjustments, then update or download the Affinity SVG. KZY ZmanimScreens supplies fixed times, offsets and rounding rules; KosherZmanim supplies the astronomical base zmanim. Manual edits are saved per week in this browser.</p>
     </section>
 
-    <section class="workspace">
+    <section class="workspace" data-app-view="weekly">
       <div class="editor">
         <div class="editor-head">
           <h2>Weekly schedule</h2>
@@ -81,6 +88,15 @@
           <div id="weekdayRows"></div>
         </div>
       </div>
+    </section>
+
+    <section id="holidayView" class="holiday-view" data-app-view="holiday" hidden>
+      <div class="holiday-view-head">
+        <div class="eyebrow">HOLIDAY ARCHIVE / PLANNERS</div>
+        <h2>Holiday schedules</h2>
+        <p>Holiday planners stay available here without cluttering the regular weekly production screen.</p>
+      </div>
+      <div id="holidayPlannerMount"></div>
     </section>
   </main>
 </body>

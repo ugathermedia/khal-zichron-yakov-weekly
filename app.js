@@ -235,18 +235,6 @@ function supplementShabbos(rows) {
   const shab = state.engine?.shabbos || {};
   const result = [...rows];
 
-  const firstMinchaA = result.find(r => !r.section && r.label === 'מנחה א׳');
-  if (firstMinchaA?.time && !result.some(r => r.label === 'לקראת שבת')) {
-    const m = parseClockForFriday(firstMinchaA.time);
-    if (m != null) {
-      result.unshift({
-        label: 'לקראת שבת',
-        time: clockFromLocalMinutes(Math.floor((m - 35) / 5) * 5),
-        source: '35+ min before Friday Mincha A; rounded down to :05'
-      });
-    }
-  }
-
   const extras = [];
   if (!result.some(r => /מג.?א|mga/i.test(r.label))) {
     extras.push({ label: 'סו״ז קריאת שמע מג״א', time: fmtDateTime(shab.SofZmanShmaMGA72Minutes), source: 'KosherZmanim MGA fixed 72' });

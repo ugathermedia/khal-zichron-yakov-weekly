@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>Khal Zichron Yakov Weekly</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="weekly-sheet.css?v=1">
   <script defer src="https://unpkg.com/kosher-zmanim@0.9.0/dist/kosher-zmanim.min.js"></script>
   <script defer src="bootstrap.js"></script>
   <script defer src="app.js"></script>
@@ -14,6 +15,7 @@
   <script defer src="weekday-planner.js?v=1"></script>
   <script defer src="succos-planner.js?v=3"></script>
   <script defer src="view-tabs.js?v=1"></script>
+  <script defer src="weekly-sheet.js?v=1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -44,6 +46,7 @@
       <div id="weekTitle" class="week-title">Loading…</div>
 
       <div class="actions">
+        <button id="printWeeklySheet" class="primary">Print / Save PDF</button>
         <button id="refresh" class="primary">Refresh KZY schedule</button>
         <button id="updateLinked">Connect / update Affinity SVG</button>
         <button id="exportSvg">Download SVG</button>
@@ -59,7 +62,7 @@
         <div id="calibration" class="calibration">Waiting for engine…</div>
       </div>
 
-      <p class="note"><strong>Weekly production mode:</strong> choose the Friday, confirm the season/special-Shabbos settings, review weekday adjustments, then update or download the Affinity SVG. KZY ZmanimScreens supplies fixed times, offsets and rounding rules; KosherZmanim supplies the astronomical base zmanim. Manual edits are saved per week in this browser.</p>
+      <p class="note"><strong>Weekly sheet:</strong> choose the Friday, review the schedule, add announcements below, then print or save as PDF. In the print dialog, use Letter paper, 100% scale and turn off headers and footers. Times and announcements are saved per week in this browser.</p>
     </section>
 
     <section class="workspace" data-app-view="weekly">
@@ -69,6 +72,27 @@
           <span id="linkedFile" class="linked-file">No linked SVG file</span>
         </div>
         <div id="sourceNotice" class="source-notice">Waiting for KZY schedule…</div>
+        <section class="announcement-editor" aria-labelledby="announcementEditorTitle">
+          <h2 id="announcementEditorTitle">Announcements</h2>
+          <label class="sheet-field">Sheet title / parsha <input id="sheetTitleInput" placeholder="Optional, e.g. Parshas Bereishis" dir="auto"></label>
+          <div id="announcementFields"></div>
+          <div class="sheet-editor-actions">
+            <button id="addAnnouncement" type="button">+ Add announcement</button>
+            <button id="copyPreviousAnnouncements" type="button">Copy previous week</button>
+          </div>
+          <p id="announcementSaveStatus" class="note" role="status"></p>
+          <details class="sheet-options">
+            <summary>Backup &amp; background</summary>
+            <div class="sheet-editor-actions">
+              <button id="backupAnnouncements" type="button">Download this week’s backup</button>
+              <label class="file-button">Restore this week <input id="restoreAnnouncements" type="file" accept="application/json,.json"></label>
+            </div>
+            <label class="sheet-field">Replace background PNG/JPEG <input id="sheetBackgroundUpload" type="file" accept="image/png,image/jpeg"></label>
+            <button id="resetSheetBackground" type="button">Use original background</button>
+            <p class="note">Your replacement is saved in this browser. Use an 8.5 × 11 portrait image, ideally 2550 × 3300 pixels.</p>
+          </details>
+        </section>
+        <h2 class="schedule-editor-title">Zmanim</h2>
         <div id="fields"></div>
         <details class="diagnostics">
           <summary>Diagnostics</summary>
@@ -77,8 +101,25 @@
       </div>
 
       <div class="preview-wrap">
-        <div class="preview-label">AFFINITY PANEL PREVIEW</div>
-        <div id="panel" class="panel" dir="rtl">
+        <div class="preview-label">WEEKLY SHEET · US LETTER</div>
+        <p id="sheetFitStatus" class="sheet-fit-status" role="status"></p>
+        <div id="sheetPreviewViewport" class="sheet-preview-viewport">
+          <article id="weeklySheet" class="weekly-sheet" aria-label="Printable weekly sheet">
+            <img id="sheetBackground" class="sheet-background" src="assets/weekly-zmanim-background.png" alt="" width="1582" height="2048">
+            <div class="sheet-announcements sheet-zone"><div id="sheetAnnouncementContent" class="sheet-zone-content"></div></div>
+            <div class="sheet-zmanim sheet-zone" dir="rtl">
+              <div class="sheet-zone-content" id="sheetScheduleContent">
+                <div class="sheet-week-heading"><div id="sheetTitle" class="sheet-title" dir="auto"></div><div id="sheetDates" class="sheet-date" dir="ltr"></div><div id="sheetHebrewDate" class="sheet-date"></div></div>
+                <div id="sheetShabbosRows"></div>
+                <div class="sheet-section sheet-weekday-heading">זמני ימי החול</div>
+                <div id="sheetWeekdayRows"></div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <details class="legacy-panel-preview">
+          <summary>SVG panel preview</summary>
+          <div id="panel" class="panel" dir="rtl">
           <div class="panel-head">
             <div class="hebrew-title">זמני שבת</div>
             <div id="panelDate" class="panel-date"></div>
@@ -86,7 +127,8 @@
           <div id="panelRows"></div>
           <div class="section-title">זמני ימי החול</div>
           <div id="weekdayRows"></div>
-        </div>
+          </div>
+        </details>
       </div>
     </section>
 

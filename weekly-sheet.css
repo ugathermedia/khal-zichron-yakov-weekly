@@ -1,0 +1,54 @@
+/* The stationery is locked. Coordinates refer to its Letter-sized canvas. */
+.weekly-sheet{position:relative;width:8.5in;height:11in;background:#fff;color:#172238;font-family:Arial,sans-serif;box-shadow:0 8px 30px #17223826;flex:none;isolation:isolate}
+.sheet-background{position:absolute;inset:0;width:100%;height:100%;z-index:-1;object-fit:fill}
+.sheet-zone{position:absolute;top:27.5%;bottom:10%;overflow:hidden}
+.sheet-announcements{left:5.8%;width:32%}
+.sheet-zmanim{left:46.9%;width:42.2%}
+.sheet-zone-content{font-size:14px;line-height:1.36;overflow-wrap:anywhere}
+.sheet-week-heading{text-align:center;padding-bottom:.6em;margin-bottom:.4em;border-bottom:1px solid #bbc3cb}
+.sheet-title{font-size:1.15em;font-weight:700;margin-bottom:.15em}
+.sheet-title:empty{display:none}
+.sheet-date{font-size:.85em;margin-top:.15em}
+.sheet-section{font-size:1.04em;font-weight:700;margin:.65em 0 .2em;border-bottom:1px solid #8094a4;padding-bottom:.15em;text-align:right}
+.sheet-weekday-heading{border-bottom:2px solid #8094a4;margin-top:.85em}
+.sheet-row{display:flex;align-items:baseline;gap:.45em;padding:.22em 0;direction:rtl;break-inside:avoid}
+.sheet-row-label{max-width:62%;flex-shrink:1;min-width:0}
+.sheet-row-rule{border-bottom:1px solid #cbd2d9;flex:1;min-width:.4em;align-self:center}
+.sheet-row-time{direction:ltr;unicode-bidi:isolate;text-align:left;white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums;flex-shrink:0}
+.sheet-announcement{padding:0 0 .85em;margin:0 0 .85em;border-bottom:1px solid #cbd2d9;break-inside:avoid}
+.sheet-announcement:last-child{border:0}
+.sheet-announcement h3{font-size:1.12em;line-height:1.25;margin:0 0 .25em;color:#24334e}
+.sheet-announcement-subtitle{font-size:.92em;font-weight:700;margin-bottom:.3em}
+.sheet-announcement-body{white-space:pre-wrap}
+.sheet-preview-viewport{position:relative;margin:auto;overflow:hidden}
+.sheet-preview-viewport .weekly-sheet{transform-origin:top left}
+.sheet-fit-status{font-size:12px;color:#536070;margin:0 0 14px}
+.sheet-fit-status.error{color:#a12626;font-weight:700}
+.announcement-editor{padding:18px 0 22px;border-bottom:1px solid #d9dde5;margin-bottom:20px}
+.announcement-editor h2{font-size:22px;margin:0 0 12px}
+.sheet-field{display:flex;flex-direction:column;gap:5px;font-size:12px;margin-bottom:12px}
+.sheet-field input,.sheet-field textarea{width:100%;border:1px solid #cfd4dd;border-radius:7px;padding:9px;font:inherit;color:var(--ink);background:#fff}
+.sheet-field textarea{min-height:90px;resize:vertical}
+.announcement-card{padding:14px;border:1px solid #d9dde5;border-radius:8px;margin:12px 0;background:#fafaf9}
+.announcement-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;font-size:12px}
+.announcement-card-tools{display:flex;gap:4px}
+.announcement-card-tools button{padding:4px 7px}
+.sheet-editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.announcement-editor button,.file-button{border:1px solid #cfd4dd;border-radius:7px;padding:8px 10px;font:inherit;font-size:12px;background:#fff;color:var(--ink)}
+.file-button{position:relative;cursor:pointer;overflow:hidden}
+.file-button input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.sheet-options{margin-top:12px;font-size:12px}
+.sheet-options summary,.legacy-panel-preview summary{cursor:pointer;color:#536070;padding:8px 0}
+.legacy-panel-preview{margin-top:20px;font-size:12px}
+.schedule-editor-title{font-size:22px}
+.workspace{grid-template-columns:minmax(360px,.8fr) minmax(460px,1.2fr)}
+.workspace[hidden],.controls[hidden]{display:none!important}
+#printSheetMount{display:none}
+@media(max-width:1000px){.workspace{grid-template-columns:1fr}.preview-wrap{padding:16px}.topbar{height:auto;min-height:68px;gap:10px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px}.status-cluster{flex-wrap:wrap}}
+@media print{
+ @page{size:Letter;margin:0}
+ html,body{margin:0!important;padding:0!important;width:8.5in!important;background:#fff!important}
+ body > *:not(#printSheetMount){display:none!important}
+ #printSheetMount{display:block!important;margin:0!important;padding:0!important}
+ #printSheetMount .weekly-sheet{width:8.5in!important;height:11in!important;transform:none!important;box-shadow:none!important;margin:0!important;break-after:avoid;break-inside:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}

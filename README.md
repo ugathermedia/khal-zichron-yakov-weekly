@@ -4,11 +4,15 @@ A purpose-built weekly production tool for Khal Zichron Yakov.
 
 ## Goal
 
-Replace the fragile Affinity Data Merge workflow with a small web app that selects a Shabbos/week, reads KZY's ZmanimScreens schedule configuration, combines fixed shul times with validated KosherJava/KosherZmanim astronomical values, allows manual overrides, and exports a finished vector SVG panel for placement as a linked resource in Affinity Publisher.
+Produce the complete weekly Letter-sized sheet in the browser. Select a Shabbos/week, review the existing KZY schedule and KosherZmanim values, add announcements, then print or save as PDF. The SVG panel remains available for Affinity.
 
 ## Current milestone
 
-The app is now in regular weekly production mode. Choose the Friday/week, confirm the seasonal and special-Shabbos settings, review weekday adjustments, then update or export `KZY-Weekly-Zmanim.svg` for Affinity Publisher.
+The weekly preview uses `assets/weekly-zmanim-background.png` as locked stationery with live announcement and schedule columns. Existing calculations, overrides and hidden-row rules feed the sheet directly. The provided artwork is 1582 × 2048; an original 2550 × 3300 PNG can replace it without changing calculation code.
+
+Announcements support title, subtitle, multiline body, visibility and ordering. They and the optional sheet/parsha title are saved per selected Friday in localStorage. Copying the previous week and restoring JSON backups append announcements, preserving existing work. These drafts do not sync between browsers. Replacement backgrounds are stored in IndexedDB in the current browser; the repository artwork is the default for all visitors.
+
+Print / Save PDF waits for fonts and artwork, verifies that both columns fit, and prints only a US Letter sheet. Font sizes shrink within bounded readable sizes; excessive content blocks the print button. Use Letter, 100% scale and disable browser headers/footers. Physical printer margins may trim the full-bleed artwork. Column coordinates and typography are in `weekly-sheet.css`.
 
 The KosherZmanim/KosherJava-compatible calculation layer is active and calibrated for KZY's saved location. Weekly rules include seasonal Shabbos Mincha/shiur timing, weekday Shacharis adjustments, Rosh Chodesh and U.S. legal-holiday handling, and later-weekday Mincha calculated at a minimum 13 minutes before shkiah rounded down to the prior :05. The completed Succos 5787 planner is retained in the codebase but only appears when a Succos week is selected.
 

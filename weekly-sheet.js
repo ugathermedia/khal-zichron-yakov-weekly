@@ -1,0 +1,273 @@
+(() => {
+  'use strict';
+  const PREFIX = 'kzy-weekly:sheet:';
+  const ORIGINAL_BACKGROUND = 'assets/weekly-zmanim-background.png';
+  const sheet = document.getElementById('weeklySheet');
+  const background = document.getElementById('sheetBackground');
+  const editor = document.getElementById('announcementFields');
+  const status = document.getElementById('announcementSaveStatus');
+  const fitStatus = document.getElementById('sheetFitStatus');
+  let currentWeek = '';
+  let draft = { title: '', announcements: [] };
+  let backgroundUrl = null;
+  let fitFrame = null;
+  let backgroundPending = false;
+
+  const weekKey = () => state.friday ? localISO(state.friday) : '';
+  const emptyDraft = () => ({ title: '', announcements: [] });
+  function validDraft(value) {
+    if (!value || typeof value !== 'object' || !Array.isArray(value.announcements)) throw new Error('Invalid announcement backup');
+    return {
+      title: String(value.title || ''),
+      announcements: value.announcements.map(a => ({
+        title: String(a.title || ''), body: String(a.body || ''),
+        subtitle: String(a.subtitle || ''), visible: a.visible !== false
+      }))
+    };
+  }
+  function loadDraft(key) {
+    try {
+      const saved = localStorage.getItem(PREFIX + key);
+      return saved ? validDraft(JSON.parse(saved)) : emptyDraft();
+    } catch { return emptyDraft(); }
+  }
+  function save() {
+    try {
+      localStorage.setItem(PREFIX + currentWeek, JSON.stringify(draft));
+      status.textContent = 'Saved for this week in this browser.';
+    } catch {
+      status.textContent = 'Could not save in this browser. Download a backup before leaving.';
+    }
+    renderSheet();
+  }
+  function drawEditor() {
+    document.getElementById('sheetTitleInput').value = draft.title;
+    editor.innerHTML = draft.announcements.map((a, i) => `
+      <div class="announcement-card" data-announcement="${i}">
+        <div class="announcement-card-head">
+          <label><input type="checkbox" data-property="visible" ${a.visible ? 'checked' : ''}> Show on sheet</label>
+          <div class="announcement-card-tools">
+            <button type="button" data-action="up" aria-label="Move announcement ${i + 1} up" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" data-action="down" aria-label="Move announcement ${i + 1} down" ${i === draft.announcements.length - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" data-action="delete" aria-label="Delete announcement ${i + 1}">Delete</button>
+          </div>
+        </div>
+        <label class="sheet-field">Title<input data-property="title" dir="auto" value="${esc(a.title)}"></label>
+        <label class="sheet-field">Time / location / subtitle<input data-property="subtitle" dir="auto" value="${esc(a.subtitle)}"></label>
+        <label class="sheet-field">Announcement<textarea data-property="body" dir="auto">${esc(a.body)}</textarea></label>
+      </div>`).join('');
+    if (!draft.announcements.length) status.textContent = 'No announcements for this week. Add one below.';
+  }
+  function syncWeek() {
+    const next = weekKey();
+    if (!next || next === currentWeek) return;
+    currentWeek = next;
+    draft = loadDraft(next);
+    drawEditor();
+    if (draft.announcements.length) status.textContent = 'Loaded this week’s saved announcements.';
+  }
+  function scheduleHTML(rows) {
+    return rows.filter(r => !r.hiddenByMode).map(r => {
+      if (r.section) return `<div class="sheet-section">${esc(r.label)}</div>`;
+      // Keep a group of minyan times together on one row, in reading order.
+      const time = String(r.time || '—').replace(/\s*·\s*/g, ', ');
+      return `<div class="sheet-row"><span class="sheet-row-label">${esc(r.label)}</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time">${esc(time)}</span></div>`;
+    }).join('');
+  }
+  function renderSheet() {
+    syncWeek();
+    if (!state.friday) return;
+    document.getElementById('sheetTitle').textContent = draft.title;
+    const saturday = addDays(state.friday, 1);
+    const fmt = { month: 'short', day: 'numeric' };
+    document.getElementById('sheetDates').textContent = `${state.friday.toLocaleDateString('en-US', fmt)} – ${saturday.toLocaleDateString('en-US', { ...fmt, year: 'numeric' })}`;
+    try {
+      document.getElementById('sheetHebrewDate').textContent = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(saturday);
+    } catch { document.getElementById('sheetHebrewDate').textContent = ''; }
+    document.getElementById('sheetShabbosRows').innerHTML = scheduleHTML(state.shabbos);
+    document.getElementById('sheetWeekdayRows').innerHTML = scheduleHTML(state.weekday);
+    document.getElementById('sheetAnnouncementContent').innerHTML = draft.announcements.filter(a => a.visible).map(a => `
+      <section class="sheet-announcement" dir="auto">
+        ${a.title ? `<h3 dir="auto">${esc(a.title)}</h3>` : ''}
+        ${a.subtitle ? `<div class="sheet-announcement-subtitle" dir="auto">${esc(a.subtitle)}</div>` : ''}
+        ${a.body ? `<div class="sheet-announcement-body" dir="auto">${esc(a.body)}</div>` : ''}
+      </section>`).join('');
+    requestFit();
+  }
+  function fitZone(zone, maximum, minimum) {
+    const content = zone.firstElementChild;
+    let size = maximum;
+    content.style.fontSize = `${size}px`;
+    while (content.scrollHeight > zone.clientHeight + 1 && size > minimum) {
+      size = Math.max(minimum, size - 0.25);
+      content.style.fontSize = `${size}px`;
+    }
+    return content.scrollHeight <= zone.clientHeight + 1 && content.scrollWidth <= zone.clientWidth + 1;
+  }
+  function fitSheet() {
+    if (!sheet.offsetWidth) return false;
+    const announcementsFit = fitZone(sheet.querySelector('.sheet-announcements'), 15, 12);
+    const scheduleFits = fitZone(sheet.querySelector('.sheet-zmanim'), 14, 11.5);
+    const ready = !!state.raw && !!state.engine && document.getElementById('status').textContent === 'KZY loaded';
+    const ok = announcementsFit && scheduleFits;
+    fitStatus.classList.toggle('error', !ok);
+    fitStatus.textContent = !ready ? 'Waiting for the complete weekly schedule. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : 'Too much content for one page. Shorten the announcements or schedule before printing.';
+    document.getElementById('printWeeklySheet').disabled = !ready || !ok || backgroundPending;
+    return ready && ok;
+  }
+  function scalePreview() {
+    const viewport = document.getElementById('sheetPreviewViewport');
+    const parentWidth = viewport.parentElement.clientWidth - parseFloat(getComputedStyle(viewport.parentElement).paddingLeft) - parseFloat(getComputedStyle(viewport.parentElement).paddingRight);
+    const scale = Math.min(1, Math.max(0, parentWidth) / 816);
+    sheet.style.transform = `scale(${scale})`;
+    viewport.style.width = `${816 * scale}px`;
+    viewport.style.height = `${1056 * scale}px`;
+  }
+  function requestFit() {
+    if (fitFrame) cancelAnimationFrame(fitFrame);
+    fitFrame = requestAnimationFrame(() => { fitFrame = null; scalePreview(); fitSheet(); });
+  }
+
+  editor.addEventListener('input', e => {
+    const property = e.target.dataset.property;
+    const card = e.target.closest('[data-announcement]');
+    if (!property || !card) return;
+    draft.announcements[Number(card.dataset.announcement)][property] = property === 'visible' ? e.target.checked : e.target.value;
+    save();
+  });
+  editor.addEventListener('click', e => {
+    const button = e.target.closest('[data-action]');
+    if (!button) return;
+    const i = Number(button.closest('[data-announcement]').dataset.announcement);
+    if (button.dataset.action === 'delete') draft.announcements.splice(i, 1);
+    else {
+      const j = i + (button.dataset.action === 'up' ? -1 : 1);
+      if (j < 0 || j >= draft.announcements.length) return;
+      [draft.announcements[i], draft.announcements[j]] = [draft.announcements[j], draft.announcements[i]];
+    }
+    drawEditor(); save();
+  });
+  document.getElementById('sheetTitleInput').addEventListener('input', e => { draft.title = e.target.value; save(); });
+  document.getElementById('addAnnouncement').onclick = () => {
+    syncWeek();
+    draft.announcements.push({ title: '', subtitle: '', body: '', visible: true });
+    drawEditor(); save();
+    editor.lastElementChild.querySelector('[data-property="title"]').focus();
+  };
+  document.getElementById('copyPreviousAnnouncements').onclick = () => {
+    syncWeek();
+    const previous = loadDraft(localISO(addDays(state.friday, -7)));
+    // Append so existing work is never overwritten by a copy operation.
+    draft.announcements.push(...previous.announcements);
+    drawEditor(); save();
+    if (!previous.announcements.length) status.textContent = 'No saved announcements in the previous week.';
+  };
+  document.getElementById('backupAnnouncements').onclick = () => {
+    syncWeek();
+    const blob = new Blob([JSON.stringify({ version: 1, week: currentWeek, ...draft }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `KZY-Announcements-${currentWeek}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  document.getElementById('restoreAnnouncements').onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const restored = validDraft(parsed);
+      syncWeek();
+      draft.title = restored.title;
+      draft.announcements.push(...restored.announcements);
+      drawEditor(); save();
+      status.textContent = 'Backup imported into the selected week. Existing announcements were kept.';
+    } catch (error) { status.textContent = `Could not restore: ${error.message}`; }
+    e.target.value = '';
+  };
+
+  // IndexedDB keeps an original-size image without localStorage's small quota.
+  function backgroundStore(mode, operation) {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('kzy-weekly-stationery', 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('assets');
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('assets', mode);
+        const result = operation(tx.objectStore('assets'));
+        tx.oncomplete = () => { db.close(); resolve(result.result); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+        tx.onabort = () => { db.close(); reject(tx.error || new Error('Background save canceled')); };
+      };
+    });
+  }
+  function showBackground(blob) {
+    if (backgroundUrl) URL.revokeObjectURL(backgroundUrl);
+    backgroundUrl = blob ? URL.createObjectURL(blob) : null;
+    background.src = backgroundUrl || ORIGINAL_BACKGROUND;
+  }
+  document.getElementById('sheetBackgroundUpload').onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    backgroundPending = true;
+    document.getElementById('printWeeklySheet').disabled = true;
+    try {
+      if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Choose a PNG or JPEG');
+      const probe = new Image();
+      const url = URL.createObjectURL(file);
+      try {
+        probe.src = url;
+        await probe.decode();
+        if (Math.abs(probe.naturalWidth / probe.naturalHeight - 8.5 / 11) > 0.01) throw new Error('The image must have 8.5 × 11 portrait proportions');
+      } finally { URL.revokeObjectURL(url); }
+      await backgroundStore('readwrite', store => store.put(file, 'background'));
+      showBackground(file);
+      status.textContent = 'Background saved in this browser.';
+    } catch (error) { status.textContent = `Could not replace background: ${error.message}`; }
+    finally { backgroundPending = false; requestFit(); e.target.value = ''; }
+  };
+  document.getElementById('resetSheetBackground').onclick = async () => {
+    try {
+      await backgroundStore('readwrite', store => store.delete('background'));
+      showBackground(null);
+      status.textContent = 'Original background restored.';
+    } catch (error) { status.textContent = `Could not reset background: ${error.message}`; }
+  };
+  backgroundStore('readonly', store => store.get('background')).then(blob => { if (blob) showBackground(blob); }).catch(() => {});
+
+  const printMount = document.createElement('div');
+  printMount.id = 'printSheetMount';
+  document.body.appendChild(printMount);
+  function mountPrintSheet() {
+    const clone = sheet.cloneNode(true);
+    clone.style.transform = 'none';
+    clone.removeAttribute('id');
+    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    printMount.replaceChildren(clone);
+  }
+  document.getElementById('printWeeklySheet').onclick = async () => {
+    if (backgroundPending) return;
+    renderSheet();
+    try {
+      if (document.fonts) await document.fonts.ready;
+      await background.decode();
+      if (!fitSheet()) return;
+      mountPrintSheet();
+      await printMount.querySelector('img').decode();
+      window.print();
+    } catch (error) { fitStatus.textContent = `Could not prepare printing: ${error.message}`; fitStatus.classList.add('error'); }
+  };
+  window.addEventListener('beforeprint', () => { fitSheet(); mountPrintSheet(); });
+  window.addEventListener('resize', requestFit);
+  new MutationObserver(requestFit).observe(document.querySelector('.workspace'), { attributes: true, attributeFilter: ['hidden'] });
+  new MutationObserver(requestFit).observe(document.getElementById('status'), { childList: true });
+  if (window.ResizeObserver) new ResizeObserver(requestFit).observe(document.getElementById('sheetPreviewViewport').parentElement);
+  background.addEventListener('load', requestFit);
+
+  // Every calculation, seasonal mode and manual time edit uses the existing renderer.
+  const originalRenderPanel = window.renderPanel;
+  window.renderPanel = function renderPanelWithSheet() { originalRenderPanel(); renderSheet(); };
+  const originalRenderTitle = window.renderTitle;
+  window.renderTitle = function renderTitleWithSheet() { originalRenderTitle(); renderSheet(); };
+  renderSheet();
+})();

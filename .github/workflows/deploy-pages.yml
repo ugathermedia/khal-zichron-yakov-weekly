@@ -39,10 +39,15 @@ jobs:
               --slurpfile payload "$tmp" \
               '{fetchedAt:$fetchedAt,data:$payload[0]}' > kzy-data.json
           else
-            echo "::warning::Live KZY data fetch failed; using the last deployed snapshot."
-            curl --fail --silent --show-error --location --retry 2 \
+            echo "::warning::Live KZY data fetch failed."
+            if curl --fail --silent --show-error --location --retry 2 \
               'https://ugathermedia.github.io/khal-zichron-yakov-weekly/kzy-data.json' \
-              --output kzy-data.json
+              --output kzy-data.json; then
+              echo "Using last deployed KZY snapshot."
+            else
+              echo "::warning::No previous KZY snapshot available; deploying app in offline schedule mode."
+              printf '%s\n' '{"fetchedAt":null,"data":[]}' > kzy-data.json
+            fi
           fi
 
       - name: Configure GitHub Pages

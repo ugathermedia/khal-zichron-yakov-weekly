@@ -145,41 +145,56 @@
     const season = getSeason();
     const special = getSpecial();
 
-    // After Succos, the winter Friday schedule no longer has the early Mincha.
-    // Only alter the Friday rows (everything before the Shabbos-day section);
-    // Shabbos-afternoon Mincha rows must remain untouched.
+    // After Succos, winter Friday has one Mincha/Kabbalas Shabbos only.
+    // Use the first Shacharis row as a robust boundary between Friday-night
+    // rows and Shabbos-day rows; do not depend on a specific section label.
     if (season === 'winter') {
-      const shabbosDayIndex = state.shabbos.findIndex(r =>
-        r.section && (r.label === 'שבת קודש' || /shabbos day/i.test(r.label || ''))
+      const shabbosMorningIndex = state.shabbos.findIndex(r =>
+        !r.section && r.label === 'שחרית'
       );
-      if (shabbosDayIndex < 0) {
-        state.diagnostics = [...(state.diagnostics || []), 'Winter Friday cleanup: Shabbos-day section not found; no Friday rows changed'];
-      }
-      const fridayEnd = shabbosDayIndex;
+      if (shabbosMorningIndex < 0) {
+        state.diagnostics = [...(state.diagnostics || []), 'Winter Friday cleanup: Shabbos Shacharis boundary not found; no Friday rows changed'];
+      } else {
+        const fridayMinchaIndexes = state.shabbos
+          .map((r, i) => ({ r, i }))
+          .filter(x => x.i < shabbosMorningIndex && !x.r.section && /^מנחה/.test(x.r.label || ''))
+          .map(x => x.i);
 
-      const earlyFridayIndex = shabbosDayIndex < 0 ? -1 : state.shabbos.findIndex((r, i) =>
-        i < fridayEnd && !r.section && r.label === 'מנחה א׳'
-      );
-      if (earlyFridayIndex >= 0) state.shabbos[earlyFridayIndex].hiddenByMode = true;
+        // If the KZY board still supplies two Friday Minchas, hide the earlier one.
+        if (fridayMinchaIndexes.length > 1) {
+          fridayMinchaIndexes.slice(0, -1).forEach(i => {
+            state.shabbos[i].hiddenByMode = true;
+          });
+        }
 
-      // With only one Friday Mincha remaining, don't leave it labeled "Mincha B".
-      const regularFridayIndex = shabbosDayIndex < 0 ? -1 : state.shabbos.findIndex((r, i) =>
-        i < fridayEnd && !r.section && r.label === 'מנחה ב׳'
-      );
-      if (regularFridayIndex >= 0) {
-        const fridayMincha = state.shabbos[regularFridayIndex];
-        fridayMincha.label = 'מנחה / קבלת שבת';
+        // The last Friday Mincha is the regular post-Succos Mincha/Kabbalas Shabbos.
+        const regularFridayIndex = fridayMinchaIndexes.at(-1);
+        if (regularFridayIndex != null) {
+          const fridayMincha = state.shabbos[regularFridayIndex];
+          fridayMincha.label = 'מנחה / קבלת שבת';
 
-        // Rebase Likras Shabbos on the remaining Friday Mincha:
-        // at least 35 minutes before, rounded down to the prior :05.
-        const minchaMinutes = clockMinutes(fridayMincha.time);
-        const likras = state.shabbos.find((r, i) =>
-          i < fridayEnd && !r.section && r.label === 'לקראת שבת'
-        );
-        if (likras && minchaMinutes != null) {
-          likras.time = clockFromLocalMinutes(Math.floor((minchaMinutes - 35) / 5) * 5);
-          likras.source = 'Winter: 35+ min before Friday Mincha; rounded down to :05';
-          likras.modeCalculated = true;
+          const minchaMinutes = clockMinutes(fridayMincha.time);
+          if (minchaMinutes != null) {
+            const likrasTime = clockFromLocalMinutes(Math.floor((minchaMinutes - 35) / 5) * 5);
+            let likrasIndex = state.shabbos.findIndex((r, i) =>
+              i < shabbosMorningIndex && !r.section && r.label === 'לקראת שבת'
+            );
+
+            if (likrasIndex >= 0) {
+              const likras = state.shabbos[likrasIndex];
+              likras.time = likrasTime;
+              likras.source = 'Winter: at least 35 min before Friday Mincha/Kabbalas Shabbos; rounded down to :05';
+              likras.modeCalculated = true;
+            } else {
+              state.shabbos.splice(regularFridayIndex, 0, {
+                label: 'לקראת שבת',
+                time: likrasTime,
+                source: 'Winter: at least 35 min before Friday Mincha/Kabbalas Shabbos; rounded down to :05',
+                modeOwned: true,
+                modeCalculated: true
+              });
+            }
+          }
         }
       }
     }

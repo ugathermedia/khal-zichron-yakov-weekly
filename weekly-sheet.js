@@ -311,6 +311,7 @@
   new MutationObserver(requestFit).observe(document.getElementById('status'), { childList: true });
   if (window.ResizeObserver) new ResizeObserver(requestFit).observe(document.getElementById('sheetPreviewViewport').parentElement);
   background.addEventListener('load', requestFit);
+  if (document.fonts) document.fonts.addEventListener('loadingdone', requestFit);
 
   // Every calculation, seasonal mode and manual time edit uses the existing renderer.
   const originalRenderPanel = window.renderPanel;

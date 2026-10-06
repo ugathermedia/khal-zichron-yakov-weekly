@@ -233,7 +233,8 @@ function clockFromLocalMinutes(m) {
 
 function supplementShabbos(rows) {
   const shab = state.engine?.shabbos || {};
-  const result = [...rows];
+  // Empty fixed Shiur entries are vacant board slots, not additional shiurim.
+  const result = rows.filter(r => r.section || r.label !== 'שיעור' || String(r.time || '').trim());
 
   const extras = [];
   if (!result.some(r => /מג.?א|mga/i.test(r.label))) {

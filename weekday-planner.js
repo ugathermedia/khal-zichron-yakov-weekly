@@ -5,12 +5,12 @@
   const rcCache = new Map();
 
   const DAYS = [
-    { add: 2, key: 'sun', label: 'יום א׳', ui: 'Sun' },
-    { add: 3, key: 'mon', label: 'יום ב׳', ui: 'Mon' },
-    { add: 4, key: 'tue', label: 'יום ג׳', ui: 'Tue' },
-    { add: 5, key: 'wed', label: 'יום ד׳', ui: 'Wed' },
-    { add: 6, key: 'thu', label: 'יום ה׳', ui: 'Thu' },
-    { add: 7, key: 'fri', label: 'יום ו׳', ui: 'Fri' }
+    { add: 2, key: 'sun', label: 'יום א׳', ui: 'Sun', english: 'Sunday' },
+    { add: 3, key: 'mon', label: 'יום ב׳', ui: 'Mon', english: 'Monday' },
+    { add: 4, key: 'tue', label: 'יום ג׳', ui: 'Tue', english: 'Tuesday' },
+    { add: 5, key: 'wed', label: 'יום ד׳', ui: 'Wed', english: 'Wednesday' },
+    { add: 6, key: 'thu', label: 'יום ה׳', ui: 'Thu', english: 'Thursday' },
+    { add: 7, key: 'fri', label: 'יום ו׳', ui: 'Fri', english: 'Friday' }
   ];
 
   const getMode = () => localStorage.getItem(MODE_KEY) || 'rounded13';
@@ -73,12 +73,8 @@
     const key = localISO(start) + ':' + localISO(end);
     if (rcCache.has(key)) return rcCache.get(key);
     try {
-      const url = 'https://www.hebcal.com/hebcal?v=1&cfg=json&nx=on&i=off&start=' +
-        encodeURIComponent(localISO(start)) + '&end=' + encodeURIComponent(localISO(end));
-      const res = await fetch(url, { cache: 'force-cache' });
-      if (!res.ok) throw new Error('Hebcal ' + res.status);
-      const json = await res.json();
-      const set = new Set((json.items || [])
+      const items = await window.kzyCalendar.events(localISO(start), localISO(end));
+      const set = new Set(items
         .filter(x => x.category === 'roshchodesh' || /Rosh Chodesh/i.test(x.title || ''))
         .map(x => x.date));
       rcCache.set(key, set);
@@ -86,7 +82,6 @@
     } catch (e) {
       state.diagnostics = [...(state.diagnostics || []), 'Rosh Chodesh lookup: ' + e.message];
       const empty = new Set();
-      rcCache.set(key, empty);
       return empty;
     }
   }
@@ -143,14 +138,15 @@
     const bundled = [];
     for (const row of rows) {
       const last = bundled[bundled.length - 1];
-      if (last && last.time === row.time) {
+      if (last && last.time === row.time && last.reason === row.reason && JSON.stringify(last.emphasizedTimes) === JSON.stringify(row.emphasizedTimes)) {
         last._days.push(row.label);
+        last.dayNames.push(...(row.dayNames || []));
         last.label = last._days.length === 2
           ? `${last._days[0]}–${last._days[1].replace(/^יום\s*/, '')}`
           : `${last._days[0]}–${last._days[last._days.length - 1].replace(/^יום\s*/, '')}`;
         last.source = sourceLabel;
       } else {
-        bundled.push({ ...row, _days:[row.label] });
+        bundled.push({ ...row, _days:[row.label], dayNames:[...(row.dayNames || [])] });
       }
     }
     return bundled.map(({ _days, ...row }) => row);
@@ -190,6 +186,9 @@
       shacharisRows.push({
         label: d.label,
         time: shacharisTimes,
+        dayNames: [d.english],
+        reason: autoRc ? 'Rosh Chodesh' : '',
+        emphasizedTimes: autoRc && board.shacharisA !== '6:30' ? ['6:30'] : [],
         source: [
           autoRc ? 'Rosh Chodesh' : '',
           holiday || '',
@@ -203,6 +202,7 @@
         const autoMincha = laterMincha(d.date);
         minchaRows.push({
           label: d.label,
+          dayNames: [d.english],
           time: String(manual.minchaCustom || '').trim() || autoMincha,
           source: manual.minchaCustom
             ? 'Manual later Mincha'
@@ -230,8 +230,7 @@
         source: 'Early Mincha fixed at ' + board.minchaEarly + ' · ' + row.source
       })),
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
-      { label:'בשקיעה', time:'שקיעה', source:'KZY: at shkiah', weekdayPlanner:true },
-      { label:'מעריב', time:[board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY fixed', weekdayPlanner:true }
+      { label:'מעריב', time:['שקיעה', board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY: at shkiah + fixed minyanim', weekdayPlanner:true }
     ];
 
     state.weekdayPlannerMeta = meta;

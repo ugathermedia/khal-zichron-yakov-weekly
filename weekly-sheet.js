@@ -12,6 +12,9 @@
   let backgroundUrl = null;
   let fitFrame = null;
   let backgroundPending = false;
+  let calendarInfo = null;
+  let calendarLoading = false;
+  let calendarError = '';
 
   const weekKey = () => state.friday ? localISO(state.friday) : '';
   const emptyDraft = () => ({ title: '', announcements: [] });
@@ -63,27 +66,63 @@
     if (!next || next === currentWeek) return;
     currentWeek = next;
     draft = loadDraft(next);
+    calendarInfo = null;
+    calendarLoading = true;
+    calendarError = '';
+    const saturdayKey = localISO(addDays(state.friday, 1));
+    window.kzyCalendar.events(saturdayKey, saturdayKey).then(items => {
+      if (currentWeek !== next) return;
+      calendarInfo = {
+        parsha: items.find(item => item.category === 'parashat'),
+        mevorchim: items.find(item => item.category === 'mevarchim')
+      };
+      calendarLoading = false;
+      renderSheet();
+    }).catch(error => {
+      if (currentWeek !== next) return;
+      calendarLoading = false;
+      calendarError = error.message;
+      renderSheet();
+    });
     drawEditor();
     if (draft.announcements.length) status.textContent = 'Loaded this week’s saved announcements.';
   }
   function scheduleHTML(rows) {
-    return rows.filter(r => !r.hiddenByMode).map(r => {
+    const visible = rows.filter(r => !r.hiddenByMode);
+    const mga = visible.find(r => !r.section && /קריאת שמע.*מג״א/.test(r.label || ''));
+    const gra = visible.find(r => !r.section && /קריאת שמע.*גר״א/.test(r.label || ''));
+    return visible.map(r => {
       if (r.section) return `<div class="sheet-section">${esc(r.label)}</div>`;
+      if (mga && gra && r === gra) return '';
+      if (mga && gra && r === mga) {
+        return `<div class="sheet-row"><span class="sheet-row-label">סו״ז ק״ש</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time sheet-ks-time"><span dir="rtl">מג״א <bdi dir="ltr">${esc(mga.time || '—')}</bdi></span><span aria-hidden="true">·</span><span dir="rtl">גר״א <bdi dir="ltr">${esc(gra.time || '—')}</bdi></span></span></div>`;
+      }
       // Keep a group of minyan times together on one row, in reading order.
-      const time = String(r.time || '—').replace(/\s*·\s*/g, ', ');
-      return `<div class="sheet-row"><span class="sheet-row-label">${esc(r.label)}</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time">${esc(time)}</span></div>`;
+      const time = String(r.time || '—').split(/\s*[·,]\s*/).map(part => {
+        const text = `<bdi dir="auto">${esc(part)}</bdi>`;
+        return (r.emphasizedTimes || []).includes(part.trim()) ? `<strong>${text}</strong>` : text;
+      }).join(', ');
+      const names = r.dayNames || [];
+      const label = names.length > 1 ? `${names[0]}–${names[names.length - 1]}` : names[0] || r.label;
+      const reason = r.reason ? `<span class="sheet-row-note">(${esc(r.reason)})</span>` : '';
+      return `<div class="sheet-row"><span class="sheet-row-label ${names.length ? 'sheet-day-label' : ''}">${esc(label)}${reason}</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time">${time}</span></div>`;
     }).join('');
   }
   function renderSheet() {
     syncWeek();
     if (!state.friday) return;
-    document.getElementById('sheetTitle').textContent = draft.title;
+    document.getElementById('sheetTitle').textContent = draft.title || calendarInfo?.parsha?.hebrew || (calendarLoading ? '' : 'שבת קודש');
+    const mevorchim = calendarInfo?.mevorchim;
+    document.getElementById('sheetMevorchim').textContent = mevorchim ? 'מברכים החודש · ' + String(mevorchim.hebrew || '').replace(/^מברכים\s+חודש\s+/, '') : '';
     const saturday = addDays(state.friday, 1);
     const fmt = { month: 'short', day: 'numeric' };
     document.getElementById('sheetDates').textContent = `${state.friday.toLocaleDateString('en-US', fmt)} – ${saturday.toLocaleDateString('en-US', { ...fmt, year: 'numeric' })}`;
     try {
       document.getElementById('sheetHebrewDate').textContent = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(saturday);
     } catch { document.getElementById('sheetHebrewDate').textContent = ''; }
+    const hebrewParts = calendarInfo?.parsha?.heDateParts || mevorchim?.heDateParts;
+    if (hebrewParts) document.getElementById('sheetHebrewDate').textContent = `${hebrewParts.d} ${hebrewParts.m} ${hebrewParts.y}`;
+    document.getElementById('sheetWeekOf').textContent = 'Week of ' + addDays(state.friday, 2).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
     document.getElementById('sheetShabbosRows').innerHTML = scheduleHTML(state.shabbos);
     document.getElementById('sheetWeekdayRows').innerHTML = scheduleHTML(state.weekday);
     document.getElementById('sheetAnnouncementContent').innerHTML = draft.announcements.filter(a => a.visible).map(a => `
@@ -108,10 +147,19 @@
     if (!sheet.offsetWidth) return false;
     const announcementsFit = fitZone(sheet.querySelector('.sheet-announcements'), 15, 12);
     const scheduleFits = fitZone(sheet.querySelector('.sheet-zmanim'), 14, 11.5);
-    const ready = !!state.raw && !!state.engine && document.getElementById('status').textContent === 'KZY loaded';
-    const ok = announcementsFit && scheduleFits;
+    const header = sheet.querySelector('.sheet-header-info');
+    const title = document.getElementById('sheetTitle');
+    let titleSize = 36;
+    title.style.fontSize = `${titleSize}px`;
+    while (header.scrollHeight > header.clientHeight + 1 && titleSize > 24) {
+      titleSize -= 1;
+      title.style.fontSize = `${titleSize}px`;
+    }
+    const headerFits = header.scrollHeight <= header.clientHeight + 1 && header.scrollWidth <= header.clientWidth + 1;
+    const ready = !!state.raw && !!state.engine && document.getElementById('status').textContent === 'KZY loaded' && !calendarLoading && !calendarError;
+    const ok = announcementsFit && scheduleFits && headerFits;
     fitStatus.classList.toggle('error', !ok);
-    fitStatus.textContent = !ready ? 'Waiting for the complete weekly schedule. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : 'Too much content for one page. Shorten the announcements or schedule before printing.';
+    fitStatus.textContent = calendarError ? `Parsha / Mevorchim calendar unavailable: ${calendarError}. Reload the page to retry.` : !ready ? 'Waiting for the complete weekly schedule and calendar. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : 'Too much content for one page. Shorten the announcements or schedule before printing.';
     document.getElementById('printWeeklySheet').disabled = !ready || !ok || backgroundPending;
     return ready && ok;
   }

@@ -224,8 +224,11 @@
       { section:true, label:'שחרית', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...bundleMatchingDayRows(shacharisRows, 'Matching Shacharis times grouped'),
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
-      { label:'מנחה מוקדמת א׳–ה׳', time:board.minchaEarly, source:'KZY fixed · Sunday–Thursday only', weekdayPlanner:true },
-      ...bundleMatchingDayRows(minchaRows, 'Matching late Mincha times grouped'),
+      ...bundleMatchingDayRows(minchaRows, 'Matching Mincha times grouped').map(row => ({
+        ...row,
+        time: [board.minchaEarly, row.time].filter(Boolean).join(' · '),
+        source: 'Early Mincha fixed at ' + board.minchaEarly + ' · ' + row.source
+      })),
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
       { label:'בשקיעה', time:'שקיעה', source:'KZY: at shkiah', weekdayPlanner:true },
       { label:'מעריב', time:[board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY fixed', weekdayPlanner:true }

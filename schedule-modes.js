@@ -152,15 +152,18 @@
       const shabbosDayIndex = state.shabbos.findIndex(r =>
         r.section && (r.label === 'שבת קודש' || /shabbos day/i.test(r.label || ''))
       );
-      const fridayEnd = shabbosDayIndex >= 0 ? shabbosDayIndex : state.shabbos.length;
+      if (shabbosDayIndex < 0) {
+        state.diagnostics = [...(state.diagnostics || []), 'Winter Friday cleanup: Shabbos-day section not found; no Friday rows changed'];
+      }
+      const fridayEnd = shabbosDayIndex;
 
-      const earlyFridayIndex = state.shabbos.findIndex((r, i) =>
+      const earlyFridayIndex = shabbosDayIndex < 0 ? -1 : state.shabbos.findIndex((r, i) =>
         i < fridayEnd && !r.section && r.label === 'מנחה א׳'
       );
       if (earlyFridayIndex >= 0) state.shabbos[earlyFridayIndex].hiddenByMode = true;
 
       // With only one Friday Mincha remaining, don't leave it labeled "Mincha B".
-      const regularFridayIndex = state.shabbos.findIndex((r, i) =>
+      const regularFridayIndex = shabbosDayIndex < 0 ? -1 : state.shabbos.findIndex((r, i) =>
         i < fridayEnd && !r.section && r.label === 'מנחה ב׳'
       );
       if (regularFridayIndex >= 0) {

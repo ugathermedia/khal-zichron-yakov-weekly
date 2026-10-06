@@ -207,7 +207,7 @@
       { section:true, label:'שחרית', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...shacharisRows,
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
-      { label:'מנחה מוקדמת', time:board.minchaEarly, source:'KZY fixed', weekdayPlanner:true },
+      { label:'מנחה מוקדמת א׳–ה׳', time:board.minchaEarly, source:'KZY fixed · Sunday–Thursday only', weekdayPlanner:true },
       ...minchaRows,
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
       { label:'בשקיעה', time:'שקיעה', source:'KZY: at shkiah', weekdayPlanner:true },

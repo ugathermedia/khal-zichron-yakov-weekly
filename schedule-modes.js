@@ -266,6 +266,14 @@
       const insertAt = lateMinchaIndex >= 0 ? lateMinchaIndex : state.shabbos.length;
       state.shabbos.splice(insertAt, 0, ...specialRows);
     }
+
+    // Friday's Likras Shabbos belongs before candle lighting in every view.
+    const likrasIndex = state.shabbos.findIndex(r => !r.section && r.label === 'לקראת שבת');
+    const candleIndex = state.shabbos.findIndex(r => !r.section && r.label === 'הדלקת נרות');
+    if (candleIndex >= 0 && likrasIndex > candleIndex) {
+      const [likras] = state.shabbos.splice(likrasIndex, 1);
+      state.shabbos.splice(candleIndex, 0, likras);
+    }
   }
 
   const baseRowsHTML = window.rowsHTML;

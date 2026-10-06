@@ -504,6 +504,12 @@
 
   function renderPlanner() {
     injectUI();
+    const card = document.getElementById('succosPlannerCard');
+    const selectedFriday = state.friday ? localISO(state.friday) : '';
+    const succosWeekSelected = selectedFriday >= '2026-09-25' && selectedFriday <= '2026-10-02';
+    if (card) card.style.display = succosWeekSelected ? '' : 'none';
+    if (!succosWeekSelected) return;
+
     let days;
     try {
       days = buildPlanner();

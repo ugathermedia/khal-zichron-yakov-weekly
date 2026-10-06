@@ -31,13 +31,19 @@ jobs:
         run: |
           set -euo pipefail
           tmp="$(mktemp)"
-          curl --fail --silent --show-error --location --retry 3 \
+          if curl --fail --silent --show-error --location --retry 3 \
             'https://kzy.zmanimscreens.com/api/data' \
-            --output "$tmp"
-          jq -n \
-            --arg fetchedAt "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-            --slurpfile payload "$tmp" \
-            '{fetchedAt:$fetchedAt,data:$payload[0]}' > kzy-data.json
+            --output "$tmp"; then
+            jq -n \
+              --arg fetchedAt "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+              --slurpfile payload "$tmp" \
+              '{fetchedAt:$fetchedAt,data:$payload[0]}' > kzy-data.json
+          else
+            echo "::warning::Live KZY data fetch failed; using the last deployed snapshot."
+            curl --fail --silent --show-error --location --retry 2 \
+              'https://ugathermedia.github.io/khal-zichron-yakov-weekly/kzy-data.json' \
+              --output kzy-data.json
+          fi
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

@@ -8,9 +8,9 @@ Replace the fragile Affinity Data Merge workflow with a small web app that selec
 
 ## Current milestone
 
-The first build establishes the production UI, live KZY API import, editable schedule rows, RTL Hebrew preview, and `KZY-Weekly-Zmanim.svg` export.
+The app is now in regular weekly production mode. Choose the Friday/week, confirm the seasonal and special-Shabbos settings, review weekday adjustments, then update or export `KZY-Weekly-Zmanim.svg` for Affinity Publisher.
 
-The KosherZmanim/KosherJava-compatible calculation layer is active and calibrated for KZY's saved location. A Succos 5787 planner now calculates Sep 25–Oct 4, 2026 from the same engine, using the 2025 schedule as the program master and 2023 only for Friday/Shabbos/Sunday configuration overrides. Every holiday row shows whether it is a direct astronomical value, an established offset rule, or a fixed shul/program time, and remains manually overrideable.
+The KosherZmanim/KosherJava-compatible calculation layer is active and calibrated for KZY's saved location. Weekly rules include seasonal Shabbos Mincha/shiur timing, weekday Shacharis adjustments, Rosh Chodesh and U.S. legal-holiday handling, and later-weekday Mincha calculated at a minimum 13 minutes before shkiah rounded down to the prior :05. The completed Succos 5787 planner is retained in the codebase but only appears when a Succos week is selected.
 
 ## Data sources
 

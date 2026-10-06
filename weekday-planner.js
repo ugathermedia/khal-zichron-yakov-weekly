@@ -139,6 +139,23 @@
     return date.toLocaleDateString('en-US', { month:'numeric', day:'numeric' });
   }
 
+  function bundleMatchingMinchaRows(rows) {
+    const bundled = [];
+    for (const row of rows) {
+      const last = bundled[bundled.length - 1];
+      if (last && last.time === row.time) {
+        last._days.push(row.label);
+        last.label = last._days.length === 2
+          ? `${last._days[0]}–${last._days[1].replace(/^יום\s*/, '')}`
+          : `${last._days[0]}–${last._days[last._days.length - 1].replace(/^יום\s*/, '')}`;
+        last.source = 'Matching late Mincha times grouped';
+      } else {
+        bundled.push({ ...row, _days:[row.label] });
+      }
+    }
+    return bundled.map(({ _days, ...row }) => row);
+  }
+
   async function buildWeekdayPlan() {
     const board = fixedFromBoard(state.weekday);
     const plan = loadPlan();
@@ -208,7 +225,7 @@
       ...shacharisRows,
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
       { label:'מנחה מוקדמת א׳–ה׳', time:board.minchaEarly, source:'KZY fixed · Sunday–Thursday only', weekdayPlanner:true },
-      ...minchaRows,
+      ...bundleMatchingMinchaRows(minchaRows),
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
       { label:'בשקיעה', time:'שקיעה', source:'KZY: at shkiah', weekdayPlanner:true },
       { label:'מעריב', time:[board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY fixed', weekdayPlanner:true }

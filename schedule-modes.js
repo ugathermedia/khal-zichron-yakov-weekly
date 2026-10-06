@@ -145,6 +145,42 @@
     const season = getSeason();
     const special = getSpecial();
 
+    // After Succos, the winter Friday schedule no longer has the early Mincha.
+    // Only alter the Friday rows (everything before the Shabbos-day section);
+    // Shabbos-afternoon Mincha rows must remain untouched.
+    if (season === 'winter') {
+      const shabbosDayIndex = state.shabbos.findIndex(r =>
+        r.section && (r.label === 'שבת קודש' || /shabbos day/i.test(r.label || ''))
+      );
+      const fridayEnd = shabbosDayIndex >= 0 ? shabbosDayIndex : state.shabbos.length;
+
+      const earlyFridayIndex = state.shabbos.findIndex((r, i) =>
+        i < fridayEnd && !r.section && r.label === 'מנחה א׳'
+      );
+      if (earlyFridayIndex >= 0) state.shabbos[earlyFridayIndex].hiddenByMode = true;
+
+      // With only one Friday Mincha remaining, don't leave it labeled "Mincha B".
+      const regularFridayIndex = state.shabbos.findIndex((r, i) =>
+        i < fridayEnd && !r.section && r.label === 'מנחה ב׳'
+      );
+      if (regularFridayIndex >= 0) {
+        const fridayMincha = state.shabbos[regularFridayIndex];
+        fridayMincha.label = 'מנחה / קבלת שבת';
+
+        // Rebase Likras Shabbos on the remaining Friday Mincha:
+        // at least 35 minutes before, rounded down to the prior :05.
+        const minchaMinutes = clockMinutes(fridayMincha.time);
+        const likras = state.shabbos.find((r, i) =>
+          i < fridayEnd && !r.section && r.label === 'לקראת שבת'
+        );
+        if (likras && minchaMinutes != null) {
+          likras.time = clockFromLocalMinutes(Math.floor((minchaMinutes - 35) / 5) * 5);
+          likras.source = 'Winter: 35+ min before Friday Mincha; rounded down to :05';
+          likras.modeCalculated = true;
+        }
+      }
+    }
+
     // Winter omits Pirkei Avos entirely. Summer modes keep it if the KZY
     // board supplies it.
     if (season === 'winter') {

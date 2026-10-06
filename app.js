@@ -42,10 +42,14 @@ function setFriday(d) {
   refresh();
 }
 
+function englishDateShortYear(date, options = {}) {
+  return date.toLocaleDateString('en-US', { ...options, year: '2-digit' }).replace(/(\d{2})$/, "'$1");
+}
+
 function renderTitle() {
   const sat = addDays(state.friday, 1);
-  $('#weekTitle').textContent = `Shabbos of ${sat.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-  $('#panelDate').textContent = `${state.friday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${sat.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  $('#weekTitle').textContent = `Shabbos of ${englishDateShortYear(sat, { month: 'long', day: 'numeric' })}`;
+  $('#panelDate').textContent = `${state.friday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${englishDateShortYear(sat, { month: 'short', day: 'numeric' })}`;
 }
 
 function boxes(raw) {
@@ -346,6 +350,10 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 }
 
+function scheduleDisplayLabel(label) {
+  return String(label || '').replace(/ר״ת/g, '(72)');
+}
+
 function editorRows() {
   const all = [
     ...state.shabbos.map((r, i) => ({ group: 'shabbos', i, r })),
@@ -354,7 +362,7 @@ function editorRows() {
 
   $('#fields').innerHTML = all.map(x => {
     if (x.r.section) return `<div class="field-section">${esc(x.r.label || '')}</div>`;
-    return `<div class="field"><label>${esc(x.r.label || '(unnamed)')} <small title="${esc(x.r.source || '')}">· ${esc(x.r.source || '')}</small></label><input data-group="${x.group}" data-i="${x.i}" value="${esc(x.r.time || '')}"></div>`;
+    return `<div class="field"><label>${esc(scheduleDisplayLabel(x.r.label) || '(unnamed)')} <small title="${esc(x.r.source || '')}">· ${esc(x.r.source || '')}</small></label><input data-group="${x.group}" data-i="${x.i}" value="${esc(x.r.time || '')}"></div>`;
   }).join('');
 
   $('#fields').querySelectorAll('input').forEach(el => el.addEventListener('input', () => {
@@ -367,7 +375,7 @@ function editorRows() {
 function rowsHTML(rows) {
   return rows.map(r => {
     if (r.section) return `<div class="schedule-subsection">${esc(r.label || '')}</div>`;
-    return `<div class="schedule-row"><div class="label">${esc(r.label || '')}</div><div class="time">${esc(r.time || '—')}</div></div>`;
+    return `<div class="schedule-row"><div class="label">${esc(scheduleDisplayLabel(r.label))}</div><div class="time">${esc(r.time || '—')}</div></div>`;
   }).join('');
 }
 
@@ -398,7 +406,7 @@ function buildSVG() {
       continue;
     }
 
-    body += `<text x="${W - pad}" y="${y}" text-anchor="end" class="label">${esc(r.label)}</text><text x="${pad}" y="${y}" class="time">${esc(r.time || '—')}</text><line x1="${pad}" x2="${W - pad}" y1="${y + 9}" y2="${y + 9}" class="line"/>`;
+    body += `<text x="${W - pad}" y="${y}" text-anchor="end" class="label">${esc(scheduleDisplayLabel(r.label))}</text><text x="${pad}" y="${y}" class="time">${esc(r.time || '—')}</text><line x1="${pad}" x2="${W - pad}" y1="${y + 9}" y2="${y + 9}" class="line"/>`;
     y += rowH;
   }
 

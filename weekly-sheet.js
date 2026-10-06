@@ -103,7 +103,7 @@
         return (r.emphasizedTimes || []).includes(part.trim()) ? `<strong>${text}</strong>` : text;
       }).join(', ');
       const names = r.dayNames || [];
-      const label = names.length > 1 ? `${names[0]}–${names[names.length - 1]}` : names[0] || r.label;
+      const label = names.length > 1 ? `${names[0]}–${names[names.length - 1]}` : names[0] || scheduleDisplayLabel(r.label);
       const reason = r.reason ? `<span class="sheet-row-note">(${esc(r.reason)})</span>` : '';
       return `<div class="sheet-row"><span class="sheet-row-label ${names.length ? 'sheet-day-label' : ''}">${esc(label)}${reason}</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time">${time}</span></div>`;
     }).join('');
@@ -116,7 +116,7 @@
     document.getElementById('sheetMevorchim').textContent = mevorchim ? 'מברכים החודש · ' + String(mevorchim.hebrew || '').replace(/^מברכים\s+חודש\s+/, '') : '';
     const saturday = addDays(state.friday, 1);
     const fmt = { month: 'short', day: 'numeric' };
-    document.getElementById('sheetDates').textContent = `${state.friday.toLocaleDateString('en-US', fmt)} – ${saturday.toLocaleDateString('en-US', { ...fmt, year: 'numeric' })}`;
+    document.getElementById('sheetDates').textContent = `${state.friday.toLocaleDateString('en-US', fmt)} – ${englishDateShortYear(saturday, fmt)}`;
     try {
       document.getElementById('sheetHebrewDate').textContent = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', { day: 'numeric', month: 'long', year: 'numeric' }).format(saturday);
     } catch { document.getElementById('sheetHebrewDate').textContent = ''; }
@@ -146,7 +146,7 @@
   function fitSheet() {
     if (!sheet.offsetWidth) return false;
     const announcementsFit = fitZone(sheet.querySelector('.sheet-announcements'), 15, 12);
-    const scheduleFits = fitZone(sheet.querySelector('.sheet-zmanim'), 14, 11.5);
+    const scheduleFits = fitZone(sheet.querySelector('.sheet-zmanim'), 15.5, 12.5);
     const header = sheet.querySelector('.sheet-header-info');
     const title = document.getElementById('sheetTitle');
     let titleSize = 36;

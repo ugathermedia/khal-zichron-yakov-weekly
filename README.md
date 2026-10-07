@@ -26,6 +26,8 @@ Monday October 12, '26 is a confirmed exception to the automatic legal-holiday 8
 
 Print / Save PDF waits for fonts and artwork, verifies that both columns fit, and prints only a US Letter sheet. Font sizes shrink within bounded readable sizes; excessive content blocks the print button. Use Letter, 100% scale and disable browser headers/footers. Physical printer margins may trim the full-bleed artwork. Column coordinates and typography are in `weekly-sheet.css`.
 
+Export PNG and Export JPEG download the complete weekly sheet at 2550 × 3300 pixels (Letter at 300 pixels per inch). They wait for fonts and artwork and enforce the same one-page fit check. A separate snapshot removes preview scaling and preserves the full background, Hebrew text, announcements and Names lines. JPEG uses 95% quality. The locally served html-to-image 1.11.13 bundle embeds fonts and images; its MIT license is included in `assets/vendor/`.
+
 The KosherZmanim/KosherJava-compatible calculation layer is active and calibrated for KZY's saved location. Weekly rules include seasonal Shabbos Mincha/shiur timing, weekday Shacharis adjustments, Rosh Chodesh and U.S. legal-holiday handling, and later-weekday Mincha calculated at a minimum 13 minutes before shkiah rounded down to the prior :05. The completed Succos 5787 planner is retained in the codebase but only appears when a Succos week is selected.
 
 ## Data sources

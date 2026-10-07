@@ -7,11 +7,15 @@
   const editor = document.getElementById('announcementFields');
   const status = document.getElementById('announcementSaveStatus');
   const fitStatus = document.getElementById('sheetFitStatus');
+  const exportStatus = document.getElementById('sheetExportStatus');
+  const outputButtons = ['printWeeklySheet', 'exportWeeklyPng', 'exportWeeklyJpeg'].map(id => document.getElementById(id));
+  const disableOutputs = disabled => outputButtons.forEach(button => { button.disabled = disabled; });
   let currentWeek = '';
   let draft = { title: '', announcements: [] };
   let backgroundUrl = null;
   let fitFrame = null;
   let backgroundPending = false;
+  let exportPending = false;
   let calendarInfo = null;
   let calendarLoading = false;
   let calendarError = '';
@@ -163,7 +167,7 @@
     const ok = announcementsFit && scheduleFits && headerFits;
     fitStatus.classList.toggle('error', !ok);
     fitStatus.textContent = calendarError ? `Parsha / Mevorchim calendar unavailable: ${calendarError}. Reload the page to retry.` : !ready ? 'Waiting for the complete weekly schedule and calendar. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : 'Too much content for one page. Shorten the announcements or schedule before printing.';
-    document.getElementById('printWeeklySheet').disabled = !ready || !ok || backgroundPending;
+    disableOutputs(!ready || !ok || backgroundPending || exportPending);
     return ready && ok;
   }
   function scalePreview() {
@@ -261,7 +265,7 @@
     const file = e.target.files[0];
     if (!file) return;
     backgroundPending = true;
-    document.getElementById('printWeeklySheet').disabled = true;
+    disableOutputs(true);
     try {
       if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Choose a PNG or JPEG');
       const probe = new Image();
@@ -297,7 +301,7 @@
     printMount.replaceChildren(clone);
   }
   document.getElementById('printWeeklySheet').onclick = async () => {
-    if (backgroundPending) return;
+    if (backgroundPending || exportPending) return;
     renderSheet();
     try {
       if (document.fonts) await document.fonts.ready;
@@ -308,6 +312,65 @@
       window.print();
     } catch (error) { fitStatus.textContent = `Could not prepare printing: ${error.message}`; fitStatus.classList.add('error'); }
   };
+  async function exportSheet(format) {
+    if (backgroundPending || exportPending) return;
+    exportPending = true;
+    disableOutputs(true);
+    exportStatus.hidden = false;
+    exportStatus.classList.remove('error');
+    exportStatus.textContent = `Preparing ${format.toUpperCase()}…`;
+    let captureHost;
+    let canvas;
+    try {
+      renderSheet();
+      if (document.fonts) await document.fonts.ready;
+      await background.decode();
+      if (!fitSheet()) {
+        exportStatus.textContent = 'Export is waiting for a complete sheet that fits on one page.';
+        return;
+      }
+      if (!window.htmlToImage?.toCanvas) throw new Error('Image exporter did not load. Refresh the page and retry.');
+      const filename = `KZY-Weekly-${currentWeek}.${format === 'jpeg' ? 'jpg' : 'png'}`;
+      // Freeze the complete sheet independently of preview scaling and later edits.
+      const capture = sheet.cloneNode(true);
+      capture.removeAttribute('id');
+      capture.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      Object.assign(capture.style, { transform: 'none', width: '816px', height: '1056px', boxShadow: 'none', margin: '0' });
+      captureHost = document.createElement('div');
+      Object.assign(captureHost.style, { position: 'fixed', left: '-100000px', top: '0', width: '816px', height: '1056px', pointerEvents: 'none' });
+      captureHost.setAttribute('aria-hidden', 'true');
+      captureHost.appendChild(capture);
+      document.body.appendChild(captureHost);
+      canvas = await window.htmlToImage.toCanvas(capture, {
+        width: 816, height: 1056, pixelRatio: 2550 / 816,
+        backgroundColor: '#ffffff', style: { transform: 'none', boxShadow: 'none' }
+      });
+      const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not encode the image.')), mime, 0.95);
+      });
+      if (blob.type !== mime) throw new Error('This browser could not encode the requested image format.');
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      exportStatus.textContent = `Downloaded ${filename} · 2550 × 3300 pixels.`;
+    } catch (error) {
+      exportStatus.textContent = `Could not export ${format.toUpperCase()}: ${error.message}`;
+      exportStatus.classList.add('error');
+    } finally {
+      captureHost?.remove();
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+      exportPending = false;
+      requestFit();
+    }
+  }
+  document.getElementById('exportWeeklyPng').onclick = () => exportSheet('png');
+  document.getElementById('exportWeeklyJpeg').onclick = () => exportSheet('jpeg');
   window.addEventListener('beforeprint', () => { fitSheet(); mountPrintSheet(); });
   window.addEventListener('resize', requestFit);
   new MutationObserver(requestFit).observe(document.querySelector('.workspace'), { attributes: true, attributeFilter: ['hidden'] });

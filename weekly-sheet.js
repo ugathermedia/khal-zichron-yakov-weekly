@@ -24,7 +24,7 @@
       title: String(value.title || ''),
       announcements: value.announcements.map(a => ({
         title: String(a.title || ''), body: String(a.body || ''),
-        subtitle: String(a.subtitle || ''), visible: a.visible !== false
+        subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false
       }))
     };
   }
@@ -56,8 +56,9 @@
           </div>
         </div>
         <label class="sheet-field">Title<input data-property="title" dir="auto" value="${esc(a.title)}"></label>
-        <label class="sheet-field">Time / location / subtitle<input data-property="subtitle" dir="auto" value="${esc(a.subtitle)}"></label>
+        <label class="sheet-field">Time / location / subtitle (optional)<input data-property="subtitle" dir="auto" value="${esc(a.subtitle)}"></label>
         <label class="sheet-field">Announcement<textarea data-property="body" dir="auto">${esc(a.body)}</textarea></label>
+        <label class="sheet-field">Names (optional)<input data-property="names" dir="auto" value="${esc(a.names)}"></label>
       </div>`).join('');
     if (!draft.announcements.length) status.textContent = 'No announcements for this week. Add one below.';
   }
@@ -129,8 +130,9 @@
     document.getElementById('sheetAnnouncementContent').innerHTML = draft.announcements.filter(a => a.visible).map(a => `
       <section class="sheet-announcement" dir="auto">
         ${a.title ? `<h3 dir="auto">${esc(a.title)}</h3>` : ''}
-        ${a.subtitle ? `<div class="sheet-announcement-subtitle" dir="auto">${esc(a.subtitle)}</div>` : ''}
+        ${a.subtitle.trim() ? `<div class="sheet-announcement-subtitle" dir="auto">${esc(a.subtitle)}</div>` : ''}
         ${a.body ? `<div class="sheet-announcement-body" dir="auto">${esc(a.body)}</div>` : ''}
+        ${a.names.trim() ? `<div class="sheet-announcement-names" dir="auto">${esc(a.names)}</div>` : ''}
       </section>`).join('');
     requestFit();
   }
@@ -199,7 +201,7 @@
   document.getElementById('sheetTitleInput').addEventListener('input', e => { draft.title = e.target.value; save(); });
   document.getElementById('addAnnouncement').onclick = () => {
     syncWeek();
-    draft.announcements.push({ title: '', subtitle: '', body: '', visible: true });
+    draft.announcements.push({ title: '', subtitle: '', body: '', names: '', visible: true });
     drawEditor(); save();
     editor.lastElementChild.querySelector('[data-property="title"]').focus();
   };

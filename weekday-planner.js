@@ -134,6 +134,26 @@
     return date.toLocaleDateString('en-US', { month:'numeric', day:'numeric' });
   }
 
+  function sundayNeitzLimit(date, times) {
+    const neitz = getZmanim(date).SeaLevelSunrise;
+    const neitzMillis = new Date(neitz).getTime();
+    if (!neitz || !Number.isFinite(neitzMillis)) throw new Error('Sunday neitz is unavailable');
+    // Use the same sea-level neitz as the holiday planner. Round the START
+    // upward only, so adding 22 minutes cannot fall before actual neitz.
+    const earliestMillis = Math.ceil((neitzMillis - 22 * 60000) / 60000) * 60000;
+    const earliest = localClockParts(new Date(earliestMillis).toISOString());
+    const earliestMinutes = earliest.h * 60 + earliest.m;
+    const changedTimes = [];
+    const adjusted = times.map(time => String(time).replace(/^\s*(\d{1,2}):([0-5]\d)/, (match, hours, minutes) => {
+      const startMinutes = Number(hours) * 60 + Number(minutes);
+      if (startMinutes >= earliestMinutes) return match;
+      const result = clockFromLocalMinutes(earliestMinutes);
+      changedTimes.push(result);
+      return result;
+    }));
+    return { times: adjusted, changedTimes, neitz: fmtDateTime(neitz), earliest: fmtDateTime(new Date(earliestMillis).toISOString()) };
+  }
+
   function bundleMatchingDayRows(rows, sourceLabel) {
     const bundled = [];
     for (const row of rows) {
@@ -178,21 +198,29 @@
       ];
       if (extra845) shacharisTimes.push(board.extraShacharis);
       if (String(manual.shacharisCustom || '').trim()) {
-        shacharisTimes = String(manual.shacharisCustom).trim();
-      } else {
-        shacharisTimes = shacharisTimes.join(' · ');
+        shacharisTimes = String(manual.shacharisCustom).trim().split(/\s*[·,;]\s*/);
       }
+      const sunday = d.key === 'sun' ? sundayNeitzLimit(d.date, shacharisTimes) : null;
+      if (sunday) shacharisTimes = sunday.times;
+      const firstShacharis = shacharisTimes[0];
+      const neitzAdjusted = !!sunday?.changedTimes.length;
+      const emphasizedTimes = [...new Set([
+        ...(autoRc && firstShacharis !== board.shacharisA ? [firstShacharis] : []),
+        ...(sunday?.changedTimes || [])
+      ])];
+      shacharisTimes = shacharisTimes.join(' · ');
 
       shacharisRows.push({
         label: d.label,
         time: shacharisTimes,
         dayNames: [d.english],
-        reason: autoRc ? 'Rosh Chodesh' : '',
-        emphasizedTimes: autoRc && board.shacharisA !== '6:30' ? ['6:30'] : [],
+        reason: [autoRc ? 'Rosh Chodesh' : '', neitzAdjusted ? 'Neitz' : ''].filter(Boolean).join(' · '),
+        emphasizedTimes,
         source: [
           autoRc ? 'Rosh Chodesh' : '',
           holiday || '',
           d.key === 'sun' ? 'Sunday 8:45' : '',
+          neitzAdjusted ? 'Sunday: not earlier than 22 minutes before sea-level neitz, rounded up to a whole minute' : '',
           hasOwn(manual,'early630') || hasOwn(manual,'extra845') || manual.shacharisCustom ? 'manual adjustment' : ''
         ].filter(Boolean).join(' · '),
         weekdayPlanner: true
@@ -215,6 +243,7 @@
 
       meta.push({
         ...d, dateKey, autoRc, holiday, auto845, early630, extra845,
+        neitz: sunday?.neitz || '', earliestSunday: sunday?.earliest || '', neitzAdjusted, firstShacharis,
         shacharisCustom: manual.shacharisCustom || '',
         minchaCustom: manual.minchaCustom || ''
       });
@@ -283,7 +312,7 @@
         </label>
       </div>
       <div id="weekdayAdjustments"></div>
-      <div class="wp-note">Rosh Chodesh automatically changes the first Shacharis from 6:45 to 6:30. Sunday and U.S. federal legal holidays automatically add 8:45. Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
+      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before neitz, rounded up to a whole minute, including custom times. Sunday and U.S. federal legal holidays automatically add 8:45. Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
     const anchor = document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);
@@ -320,7 +349,7 @@
           ${meta.map(d => {
             const auto = [d.autoRc ? 'Rosh Chodesh' : '', d.holiday || '', d.key === 'sun' ? 'Sunday' : ''].filter(Boolean).join(' · ');
             return `<tr>
-              <td class="wp-day">${d.ui}<span class="wp-date">${formatDateShort(d.date)}</span>${auto ? '<div class="wp-auto">'+esc(auto)+'</div>' : ''}</td>
+              <td class="wp-day">${d.ui}<span class="wp-date">${formatDateShort(d.date)}</span>${auto ? '<div class="wp-auto">'+esc(auto)+'</div>' : ''}${d.neitz ? '<div class="wp-auto">Neitz '+esc(d.neitz)+' · earliest '+esc(d.earliestSunday)+'</div>' : ''}</td>
               <td><input type="checkbox" data-day="${d.dateKey}" data-field="early630" ${d.early630 ? 'checked' : ''}></td>
               <td><input type="checkbox" data-day="${d.dateKey}" data-field="extra845" ${d.extra845 ? 'checked' : ''}></td>
               <td><input class="wp-wide" type="text" data-day="${d.dateKey}" data-field="shacharisCustom" value="${esc(d.shacharisCustom)}" placeholder="e.g. 6:30 · 7:30 · 8:45"></td>

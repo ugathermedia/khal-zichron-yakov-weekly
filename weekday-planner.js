@@ -3,6 +3,8 @@
   const OFFSET_KEY = 'kzy-weekly:weekday-exact-offset';
   const PLAN_PREFIX = 'kzy-weekly:weekday-plan:';
   const rcCache = new Map();
+  // Confirmed shul schedule exceptions to automatic legal-holiday minyanim.
+  const NO_AUTOMATIC_845 = new Set(['2026-10-12']);
 
   const DAYS = [
     { add: 2, key: 'sun', label: 'יום א׳', ui: 'Sun', english: 'Sunday' },
@@ -210,7 +212,7 @@
       const manual = plan.days?.[dateKey] || {};
       const autoRc = rc.has(dateKey);
       const holiday = legalHolidayName(d.date);
-      const auto845 = d.key === 'sun' || !!holiday;
+      const auto845 = d.key === 'sun' || (!!holiday && !NO_AUTOMATIC_845.has(dateKey));
 
       const early630 = hasOwn(manual, 'early630') ? !!manual.early630 : autoRc;
       const extra845 = hasOwn(manual, 'extra845') ? !!manual.extra845 : auto845;
@@ -340,7 +342,7 @@
         </label>
       </div>
       <div id="weekdayAdjustments"></div>
-      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before neitz, rounded up to a whole minute, including custom times. An additional seasonal neitz minyan is added when that start is 6:50 or later and at least 5 minutes from other minyanim; the regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45. Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
+      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before neitz, rounded up to a whole minute, including custom times. An additional seasonal neitz minyan is added when that start is 6:50 or later and at least 5 minutes from other minyanim; the regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
     const anchor = document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);

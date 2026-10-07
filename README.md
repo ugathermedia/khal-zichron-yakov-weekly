@@ -18,6 +18,8 @@ Sunday Shacharis has a neitz limit: use the later of the regular/Rosh Chodesh st
 
 When the neitz-minus-22 start is 6:50 or later, an additional seasonal neitz minyan is inserted alongside the regular minyanim. It must be at least five minutes from existing minyanim and requires an earlier scheduled minyan. The ordinary 6:45 (or Rosh Chodesh 6:30) remains. A Sunday minyan already shifted to neitz is not duplicated. Added seasonal starts are bold and labeled on the sheet; days still group only when their displayed schedules and explanations match.
 
+Monday October 12, '26 is a confirmed exception to the automatic legal-holiday 8:45 minyan. Its default Shacharis schedule is 6:30 and 7:30 for Rosh Chodesh; manual day overrides remain available.
+
 `calendar-data.json` contains Diaspora parsha, Mevorchim and Rosh Chodesh labels for 2026–2028, provided by [Hebcal](https://www.hebcal.com/) under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). `calendar.js` shares this data with the weekday planner and requests other date ranges from Hebcal's API. It never supplies astronomical times. Heebo regular/bold font files are served locally; their SIL Open Font License is included in `assets/fonts/OFL.txt`.
 
 Print / Save PDF waits for fonts and artwork, verifies that both columns fit, and prints only a US Letter sheet. Font sizes shrink within bounded readable sizes; excessive content blocks the print button. Use Letter, 100% scale and disable browser headers/footers. Physical printer margins may trim the full-bleed artwork. Column coordinates and typography are in `weekly-sheet.css`.

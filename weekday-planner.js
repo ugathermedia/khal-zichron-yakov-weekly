@@ -167,11 +167,10 @@
 
   function addSeasonalNeitzMinyan(times, timing) {
     const clocks = times.map(shacharisClockMinutes);
-    // Keep the regular early minyan. The additional seasonal minyan starts
-    // at 6:50 or later, with at least five minutes from existing minyanim.
+    // Keep the regular early minyan and require at least five minutes between
+    // minyanim. This means 6:50 after a 6:45 start, or 6:35 after RC's 6:30.
     // Sunday's shifted first minyan already serves neitz, so it is not added twice.
-    const qualifies = timing.minutes >= 6 * 60 + 50 &&
-      clocks.some(minutes => minutes != null && minutes < timing.minutes) &&
+    const qualifies = clocks.some(minutes => minutes != null && timing.minutes - minutes >= 5) &&
       clocks.every(minutes => minutes == null || Math.abs(minutes - timing.minutes) >= 5);
     if (!qualifies) return false;
     const insertAt = clocks.findIndex(minutes => minutes != null && minutes > timing.minutes);
@@ -342,7 +341,7 @@
         </label>
       </div>
       <div id="weekdayAdjustments"></div>
-      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before neitz, rounded up to a whole minute, including custom times. An additional seasonal neitz minyan is added when that start is 6:50 or later and at least 5 minutes from other minyanim; the regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
+      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before neitz, rounded up to a whole minute, including custom times. An additional seasonal neitz minyan is added when that start is at least 5 minutes after an earlier minyan and at least 5 minutes from every other minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
     const anchor = document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);

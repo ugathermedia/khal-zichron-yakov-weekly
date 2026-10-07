@@ -145,7 +145,15 @@
     const earliestMillis = Math.ceil((neitzMillis - 22 * 60000) / 60000) * 60000;
     const earliest = localClockParts(new Date(earliestMillis).toISOString());
     const earliestMinutes = earliest.h * 60 + earliest.m;
-    return { minutes: earliestMinutes, start: clockFromLocalMinutes(earliestMinutes), neitz: fmtDateTime(neitz) };
+    // Seasonal starts use the nearest :05 of the exact Neitz-minus-22 time.
+    const seasonalMillis = Math.round((neitzMillis - 22 * 60000) / (5 * 60000)) * 5 * 60000;
+    const seasonal = localClockParts(new Date(seasonalMillis).toISOString());
+    const seasonalMinutes = seasonal.h * 60 + seasonal.m;
+    return {
+      minutes: earliestMinutes, start: clockFromLocalMinutes(earliestMinutes),
+      seasonalMinutes, seasonalStart: clockFromLocalMinutes(seasonalMinutes),
+      neitz: fmtDateTime(neitz)
+    };
   }
 
   function shacharisClockMinutes(time) {
@@ -171,11 +179,12 @@
     // minyanim. This means 6:50 after a 6:45 start, or 6:35 after RC's 6:30.
     // Sunday's shifted first minyan already serves neitz, so it is not added twice.
     const qualifies = clocks.some(minutes => minutes != null && timing.minutes - minutes >= 5) &&
-      clocks.every(minutes => minutes == null || Math.abs(minutes - timing.minutes) >= 5);
-    if (!qualifies) return false;
-    const insertAt = clocks.findIndex(minutes => minutes != null && minutes > timing.minutes);
-    times.splice(insertAt < 0 ? times.length : insertAt, 0, timing.start);
-    return true;
+      clocks.some(minutes => minutes != null && timing.seasonalMinutes - minutes >= 5) &&
+      clocks.every(minutes => minutes == null || Math.abs(minutes - timing.seasonalMinutes) >= 5);
+    if (!qualifies) return '';
+    const insertAt = clocks.findIndex(minutes => minutes != null && minutes > timing.seasonalMinutes);
+    times.splice(insertAt < 0 ? times.length : insertAt, 0, timing.seasonalStart);
+    return timing.seasonalStart;
   }
 
   function bundleMatchingDayRows(rows, sourceLabel) {
@@ -229,11 +238,12 @@
       if (sunday) shacharisTimes = sunday.times;
       const firstShacharis = shacharisTimes[0];
       const neitzAdjusted = !!sunday?.changedTimes.length;
-      const seasonalNeitzAdded = addSeasonalNeitzMinyan(shacharisTimes, neitzTiming);
+      const seasonalNeitz = addSeasonalNeitzMinyan(shacharisTimes, neitzTiming);
+      const seasonalNeitzAdded = !!seasonalNeitz;
       const emphasizedTimes = [...new Set([
         ...(autoRc && firstShacharis !== board.shacharisA ? [firstShacharis] : []),
         ...(sunday?.changedTimes || []),
-        ...(seasonalNeitzAdded ? [neitzTiming.start] : [])
+        ...(seasonalNeitzAdded ? [seasonalNeitz] : [])
       ])];
       shacharisTimes = shacharisTimes.join(' · ');
 
@@ -241,14 +251,14 @@
         label: d.label,
         time: shacharisTimes,
         dayNames: [d.english],
-        reason: [autoRc ? 'Rosh Chodesh' : '', neitzAdjusted ? 'Neitz' : '', seasonalNeitzAdded ? 'Seasonal neitz minyan' : ''].filter(Boolean).join(' · '),
+        reason: [autoRc ? 'Rosh Chodesh' : '', neitzAdjusted ? 'Neitz' : '', seasonalNeitzAdded ? 'Seasonal Neitz minyan' : ''].filter(Boolean).join(' · '),
         emphasizedTimes,
         source: [
           autoRc ? 'Rosh Chodesh' : '',
           holiday || '',
           d.key === 'sun' ? 'Sunday 8:45' : '',
-          neitzAdjusted ? 'Sunday: not earlier than 22 minutes before sea-level neitz, rounded up to a whole minute' : '',
-          seasonalNeitzAdded ? 'Additional seasonal neitz minyan: ' + neitzTiming.start + ', at least 5 minutes from other minyanim' : '',
+          neitzAdjusted ? 'Sunday: not earlier than 22 minutes before sea-level Neitz, rounded up to a whole minute' : '',
+          seasonalNeitzAdded ? 'Additional seasonal Neitz minyan: ' + seasonalNeitz + ', rounded to nearest :05 and at least 5 minutes from other minyanim' : '',
           hasOwn(manual,'early630') || hasOwn(manual,'extra845') || manual.shacharisCustom ? 'manual adjustment' : ''
         ].filter(Boolean).join(' · '),
         weekdayPlanner: true
@@ -272,7 +282,7 @@
       meta.push({
         ...d, dateKey, autoRc, holiday, auto845, early630, extra845,
         neitz: neitzTiming.neitz, earliestSunday: sunday?.earliest || '', neitzAdjusted, firstShacharis,
-        seasonalNeitzAdded, seasonalNeitz: seasonalNeitzAdded ? neitzTiming.start : '',
+        seasonalNeitzAdded, seasonalNeitz,
         shacharisCustom: manual.shacharisCustom || '',
         minchaCustom: manual.minchaCustom || ''
       });
@@ -341,7 +351,7 @@
         </label>
       </div>
       <div id="weekdayAdjustments"></div>
-      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before neitz, rounded up to a whole minute, including custom times. An additional seasonal neitz minyan is added when that start is at least 5 minutes after an earlier minyan and at least 5 minutes from every other minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
+      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before Neitz, rounded up to a whole minute, including custom times. An additional seasonal Neitz minyan qualifies when the calculated start is at least 5 minutes after an earlier minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. Its start is rounded to the nearest :05 and must remain at least 5 minutes from every other minyan. Matching days are bundled. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
     const anchor = document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);
@@ -378,7 +388,7 @@
           ${meta.map(d => {
             const auto = [d.autoRc ? 'Rosh Chodesh' : '', d.holiday || '', d.key === 'sun' ? 'Sunday' : ''].filter(Boolean).join(' · ');
             return `<tr>
-              <td class="wp-day">${d.ui}<span class="wp-date">${formatDateShort(d.date)}</span>${auto ? '<div class="wp-auto">'+esc(auto)+'</div>' : ''}${d.earliestSunday ? '<div class="wp-auto">Neitz '+esc(d.neitz)+' · earliest '+esc(d.earliestSunday)+'</div>' : ''}${d.seasonalNeitz ? '<div class="wp-auto">Seasonal neitz minyan '+esc(d.seasonalNeitz)+'</div>' : ''}</td>
+              <td class="wp-day">${d.ui}<span class="wp-date">${formatDateShort(d.date)}</span>${auto ? '<div class="wp-auto">'+esc(auto)+'</div>' : ''}${d.earliestSunday ? '<div class="wp-auto">Neitz '+esc(d.neitz)+' · earliest '+esc(d.earliestSunday)+'</div>' : ''}${d.seasonalNeitz ? '<div class="wp-auto">Seasonal Neitz minyan '+esc(d.seasonalNeitz)+'</div>' : ''}</td>
               <td><input type="checkbox" data-day="${d.dateKey}" data-field="early630" ${d.early630 ? 'checked' : ''}></td>
               <td><input type="checkbox" data-day="${d.dateKey}" data-field="extra845" ${d.extra845 ? 'checked' : ''}></td>
               <td><input class="wp-wide" type="text" data-day="${d.dateKey}" data-field="shacharisCustom" value="${esc(d.shacharisCustom)}" placeholder="e.g. 6:30 · 7:30 · 8:45"></td>

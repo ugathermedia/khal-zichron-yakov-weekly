@@ -93,13 +93,14 @@
     const gra = visible.find(r => !r.section && /קריאת שמע.*גר״א/.test(r.label || ''));
     return visible.map(r => {
       if (r.section) return `<div class="sheet-section">${esc(r.label)}</div>`;
+      if (r.footnote) return `<div class="sheet-footnote" dir="ltr">${esc(r.label)}</div>`;
       if (mga && gra && r === gra) return '';
       if (mga && gra && r === mga) {
         return `<div class="sheet-row"><span class="sheet-row-label">סו״ז ק״ש</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time sheet-ks-time"><span dir="rtl">מג״א <bdi dir="ltr">${esc(mga.time || '—')}</bdi></span><span aria-hidden="true">·</span><span dir="rtl">גר״א <bdi dir="ltr">${esc(gra.time || '—')}</bdi></span></span></div>`;
       }
       // Keep a group of minyan times together on one row, in reading order.
       const time = String(r.time || '—').split(/\s*[·,]\s*/).map(part => {
-        const text = `<bdi dir="auto">${esc(part)}</bdi>`;
+        const text = `<bdi dir="auto">${esc(part)}${(r.neitzTimes || []).includes(part.trim()) ? '*' : ''}</bdi>`;
         return (r.emphasizedTimes || []).includes(part.trim()) ? `<strong>${text}</strong>` : text;
       }).join(', ');
       const names = r.dayNames || [];

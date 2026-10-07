@@ -191,7 +191,7 @@
     const bundled = [];
     for (const row of rows) {
       const last = bundled[bundled.length - 1];
-      if (last && last.time === row.time && last.reason === row.reason && JSON.stringify(last.emphasizedTimes) === JSON.stringify(row.emphasizedTimes)) {
+      if (last && last.time === row.time && last.reason === row.reason && JSON.stringify(last.emphasizedTimes) === JSON.stringify(row.emphasizedTimes) && JSON.stringify(last.neitzTimes) === JSON.stringify(row.neitzTimes)) {
         last._days.push(row.label);
         last.dayNames.push(...(row.dayNames || []));
         last.label = last._days.length === 2
@@ -251,7 +251,8 @@
         label: d.label,
         time: shacharisTimes,
         dayNames: [d.english],
-        reason: [autoRc ? 'Rosh Chodesh' : '', neitzAdjusted ? 'Neitz' : '', seasonalNeitzAdded ? 'Seasonal Neitz minyan' : ''].filter(Boolean).join(' · '),
+        reason: autoRc ? 'Rosh Chodesh' : '',
+        neitzTimes: [...new Set([...(sunday?.changedTimes || []), ...(seasonalNeitzAdded ? [seasonalNeitz] : [])])],
         emphasizedTimes,
         source: [
           autoRc ? 'Rosh Chodesh' : '',
@@ -291,6 +292,7 @@
     state.weekday = [
       { section:true, label:'שחרית', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...bundleMatchingDayRows(shacharisRows, 'Matching Shacharis times grouped'),
+      ...(shacharisRows.some(row => row.neitzTimes.length) ? [{ footnote:true, label:'*Seasonal Neitz Minyan', time:'', source:'Weekday planner', weekdayPlanner:true }] : []),
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...bundleMatchingDayRows(minchaRows, 'Matching Mincha times grouped').map(row => ({
         ...row,

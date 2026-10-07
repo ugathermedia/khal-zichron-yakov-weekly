@@ -354,6 +354,12 @@ function scheduleDisplayLabel(label) {
   return String(label || '').replace(/ר״ת/g, '(72)');
 }
 
+function scheduleDisplayTime(row) {
+  const time = String(row.time || '—');
+  if (!row.neitzTimes?.length) return time;
+  return time.split(/\s*[·,]\s*/).map(part => part + (row.neitzTimes.includes(part.trim()) ? '*' : '')).join(' · ');
+}
+
 function editorRows() {
   const all = [
     ...state.shabbos.map((r, i) => ({ group: 'shabbos', i, r })),
@@ -362,6 +368,7 @@ function editorRows() {
 
   $('#fields').innerHTML = all.map(x => {
     if (x.r.section) return `<div class="field-section">${esc(x.r.label || '')}</div>`;
+    if (x.r.footnote) return `<div class="schedule-footnote" dir="ltr">${esc(x.r.label)}</div>`;
     return `<div class="field"><label>${esc(scheduleDisplayLabel(x.r.label) || '(unnamed)')} <small title="${esc(x.r.source || '')}">· ${esc(x.r.source || '')}</small></label><input data-group="${x.group}" data-i="${x.i}" value="${esc(x.r.time || '')}"></div>`;
   }).join('');
 
@@ -375,7 +382,8 @@ function editorRows() {
 function rowsHTML(rows) {
   return rows.map(r => {
     if (r.section) return `<div class="schedule-subsection">${esc(r.label || '')}</div>`;
-    return `<div class="schedule-row"><div class="label">${esc(scheduleDisplayLabel(r.label))}</div><div class="time">${esc(r.time || '—')}</div></div>`;
+    if (r.footnote) return `<div class="schedule-footnote" dir="ltr">${esc(r.label)}</div>`;
+    return `<div class="schedule-row"><div class="label">${esc(scheduleDisplayLabel(r.label))}</div><div class="time">${esc(scheduleDisplayTime(r))}</div></div>`;
   }).join('');
 }
 
@@ -399,6 +407,11 @@ function buildSVG() {
   let body = '';
 
   for (const r of rows) {
+    if (r.footnote) {
+      body += `<text x="${pad}" y="${y}" class="time" style="font-size:12px;font-weight:400">${esc(r.label)}</text>`;
+      y += rowH;
+      continue;
+    }
     if (r.section) {
       y += 18;
       body += `<text x="${W - pad}" y="${y}" text-anchor="end" class="section">${esc(r.label)}</text><line x1="${pad}" x2="${W - pad}" y1="${y + 10}" y2="${y + 10}" class="heavy"/>`;
@@ -406,7 +419,7 @@ function buildSVG() {
       continue;
     }
 
-    body += `<text x="${W - pad}" y="${y}" text-anchor="end" class="label">${esc(scheduleDisplayLabel(r.label))}</text><text x="${pad}" y="${y}" class="time">${esc(r.time || '—')}</text><line x1="${pad}" x2="${W - pad}" y1="${y + 9}" y2="${y + 9}" class="line"/>`;
+    body += `<text x="${W - pad}" y="${y}" text-anchor="end" class="label">${esc(scheduleDisplayLabel(r.label))}</text><text x="${pad}" y="${y}" class="time">${esc(scheduleDisplayTime(r))}</text><line x1="${pad}" x2="${W - pad}" y1="${y + 9}" y2="${y + 9}" class="line"/>`;
     y += rowH;
   }
 

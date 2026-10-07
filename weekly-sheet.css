@@ -65,6 +65,7 @@
 .sheet-ks-time span{white-space:nowrap}
 .sheet-row-time strong{font-weight:700}
 .sheet-row-note{display:block;font-size:.8em;line-height:1.2;color:#5b6674;margin-top:1px}
+.sheet-footnote,.schedule-footnote{font-size:.8em;line-height:1.3;color:#5b6674;text-align:right;margin:.25em 0 .45em;break-inside:avoid}
 .sheet-day-label{direction:ltr;unicode-bidi:isolate;text-align:right}
 .sheet-weekday-heading{font-weight:700;letter-spacing:.015em}
 .calendar-credit{font-size:10px;color:#657181;margin:-8px 0 12px}

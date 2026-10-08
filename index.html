@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>Khal Zichron Yakov Weekly</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="weekly-sheet.css?v=5">
+  <link rel="stylesheet" href="weekly-sheet.css?v=6">
   <script defer src="calendar.js?v=1"></script>
   <script defer src="https://unpkg.com/kosher-zmanim@0.9.0/dist/kosher-zmanim.min.js"></script>
   <script defer src="bootstrap.js"></script>
@@ -17,7 +17,7 @@
   <script defer src="succos-planner.js?v=3"></script>
   <script defer src="view-tabs.js?v=1"></script>
   <script defer src="assets/vendor/html-to-image-1.11.13.js"></script>
-  <script defer src="weekly-sheet.js?v=6"></script>
+  <script defer src="weekly-sheet.js?v=7"></script>
 </head>
 <body>
   <header class="topbar">
@@ -78,6 +78,11 @@
         <div id="sourceNotice" class="source-notice">Waiting for KZY schedule…</div>
         <section class="announcement-editor" aria-labelledby="announcementEditorTitle">
           <h2 id="announcementEditorTitle">Announcements</h2>
+          <div class="sponsor-booking-controls">
+            <a href="https://kzy-shalosh-seudos.starrydune2.chatgpt.site" target="_blank" rel="noopener">Shalosh Seudos signup ↗</a>
+            <button type="button" id="refreshSponsorBooking">Refresh sponsor</button>
+            <p id="sponsorBookingStatus" class="note" role="status"></p>
+          </div>
           <label class="sheet-field">Parsha title override <input id="sheetTitleInput" placeholder="Automatic from the selected week" dir="auto"></label>
           <div id="announcementFields"></div>
           <div class="sheet-editor-actions">

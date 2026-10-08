@@ -2,6 +2,7 @@
   'use strict';
   const PREFIX = 'kzy-weekly:sheet:';
   const ORIGINAL_BACKGROUND = 'assets/weekly-zmanim-background.png';
+  const SPONSORSHIP_ORIGIN = 'https://kzy-shalosh-seudos.starrydune2.chatgpt.site';
   const sheet = document.getElementById('weeklySheet');
   const background = document.getElementById('sheetBackground');
   const editor = document.getElementById('announcementFields');
@@ -19,6 +20,7 @@
   let calendarInfo = null;
   let calendarLoading = false;
   let calendarError = '';
+  let sponsorRequest = 0;
 
   const weekKey = () => state.friday ? localISO(state.friday) : '';
   const emptyDraft = () => ({ title: '', announcements: [] });
@@ -28,7 +30,11 @@
       title: String(value.title || ''),
       announcements: value.announcements.map(a => ({
         title: String(a.title || ''), body: String(a.body || ''),
-        subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false
+        subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false,
+        ...(typeof a.bookingWeek === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bookingWeek) ? {
+          bookingWeek: a.bookingWeek,
+          bookingValues: { title: String(a.bookingValues?.title || ''), body: String(a.bookingValues?.body || ''), names: String(a.bookingValues?.names || '') }
+        } : {})
       }))
     };
   }
@@ -91,6 +97,49 @@
     });
     drawEditor();
     if (draft.announcements.length) status.textContent = 'Loaded this week’s saved announcements.';
+    refreshSponsorship();
+  }
+  async function refreshSponsorship() {
+    const requestedWeek = currentWeek;
+    if (!requestedWeek) return;
+    const requestNumber = ++sponsorRequest;
+    const saturday = localISO(addDays(state.friday, 1));
+    const sponsorStatus = document.getElementById('sponsorBookingStatus');
+    sponsorStatus.textContent = 'Checking Shalosh Seudos sponsorship…';
+    sponsorStatus.classList.remove('error');
+    try {
+      const response = await fetch(SPONSORSHIP_ORIGIN + '/api/sponsorship?week=' + encodeURIComponent(saturday), { cache: 'no-store', credentials: 'omit' });
+      if (!response.ok) throw new Error('Sponsorship lookup failed');
+      const data = await response.json();
+      if (!Object.prototype.hasOwnProperty.call(data, 'sponsorship')) throw new Error('Invalid sponsorship response');
+      if (requestedWeek !== currentWeek || requestNumber !== sponsorRequest) return;
+      const booking = data.sponsorship;
+      let index = draft.announcements.findIndex(a => a.bookingWeek === saturday);
+      if (!booking) {
+        if (index >= 0) { draft.announcements.splice(index, 1); drawEditor(); save(); }
+        sponsorStatus.textContent = 'No sponsor booked for this Shabbos.';
+        return;
+      }
+      if (booking.week !== saturday || typeof booking.sponsorName !== 'string' || typeof booking.dedication !== 'string') throw new Error('Invalid sponsorship response');
+      if (index < 0) index = draft.announcements.findIndex(a => !a.bookingWeek && /^(?:shalosh|sholosh)\s+seudos$/i.test(a.title.trim()));
+      const previous = index >= 0 ? draft.announcements[index] : null;
+      const values = { title: 'SHALOSH SEUDOS', body: booking.dedication, names: booking.sponsorName };
+      const announcement = previous ? { ...previous } : { title: '', subtitle: '', body: '', names: '', visible: true };
+      for (const field of Object.keys(values)) {
+        if (!previous?.bookingWeek || announcement[field] === previous.bookingValues?.[field]) announcement[field] = values[field];
+      }
+      if (/sponsorship available/i.test(announcement.subtitle)) announcement.subtitle = '';
+      announcement.bookingWeek = saturday;
+      announcement.bookingValues = values;
+      if (index >= 0) draft.announcements[index] = announcement;
+      else draft.announcements.push(announcement);
+      drawEditor(); save();
+      sponsorStatus.textContent = 'Sponsor synced from the signup form. Local edits and visibility are kept.';
+    } catch {
+      if (requestedWeek !== currentWeek || requestNumber !== sponsorRequest) return;
+      sponsorStatus.textContent = 'Could not refresh the sponsor. Saved announcements were kept. Try Refresh sponsor again.';
+      sponsorStatus.classList.add('error');
+    }
   }
   function scheduleHTML(rows) {
     const visible = rows.filter(r => !r.hiddenByMode);
@@ -213,7 +262,7 @@
     syncWeek();
     const previous = loadDraft(localISO(addDays(state.friday, -7)));
     // Append so existing work is never overwritten by a copy operation.
-    draft.announcements.push(...previous.announcements);
+    draft.announcements.push(...previous.announcements.filter(a => !a.bookingWeek));
     drawEditor(); save();
     if (!previous.announcements.length) status.textContent = 'No saved announcements in the previous week.';
   };
@@ -225,6 +274,8 @@
     a.href = url; a.download = `KZY-Announcements-${currentWeek}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
+  document.getElementById('refreshSponsorBooking').onclick = () => refreshSponsorship();
+  window.addEventListener('focus', () => { if (!document.querySelector('.workspace').hidden) refreshSponsorship(); });
   document.getElementById('restoreAnnouncements').onchange = async e => {
     const file = e.target.files[0];
     if (!file) return;

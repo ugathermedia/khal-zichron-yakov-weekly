@@ -38,6 +38,9 @@
 .announcement-card-tools{display:flex;gap:4px}
 .announcement-card-tools button{padding:4px 7px}
 .sheet-editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.sponsor-booking-controls{padding:12px;border:1px solid #d9dde5;border-radius:7px;margin-bottom:14px;background:#fafaf9;font-size:12px}
+.sponsor-booking-controls a{color:#24334e;margin-right:10px}
+.sponsor-booking-controls .error{color:#a12626}
 .announcement-editor button,.file-button{border:1px solid #cfd4dd;border-radius:7px;padding:8px 10px;font:inherit;font-size:12px;background:#fff;color:var(--ink)}
 .file-button{position:relative;cursor:pointer;overflow:hidden}
 .file-button input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}

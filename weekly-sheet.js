@@ -33,6 +33,7 @@
         subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false,
         ...(typeof a.bookingWeek === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bookingWeek) ? {
           bookingWeek: a.bookingWeek,
+          bookingTopDefault: a.bookingTopDefault === true,
           bookingValues: { title: String(a.bookingValues?.title || ''), body: String(a.bookingValues?.body || ''), names: String(a.bookingValues?.names || '') }
         } : {})
       }))
@@ -130,9 +131,12 @@
       }
       if (/sponsorship available/i.test(announcement.subtitle)) announcement.subtitle = '';
       announcement.bookingWeek = saturday;
+      announcement.bookingTopDefault = true;
       announcement.bookingValues = values;
       if (index >= 0) draft.announcements[index] = announcement;
-      else draft.announcements.push(announcement);
+      else index = draft.announcements.push(announcement) - 1;
+      // Apply the top position once, then respect the editor's move buttons.
+      if (!previous?.bookingTopDefault && index > 0) draft.announcements.unshift(...draft.announcements.splice(index, 1));
       drawEditor(); save();
       sponsorStatus.textContent = 'Sponsor synced from the signup form. Local edits and visibility are kept.';
     } catch {
@@ -184,10 +188,17 @@
       <section class="sheet-announcement" dir="auto">
         ${a.title ? `<h3 dir="auto">${esc(a.title)}</h3>` : ''}
         ${a.subtitle.trim() ? `<div class="sheet-announcement-subtitle" dir="auto">${esc(a.subtitle)}</div>` : ''}
-        ${a.body ? `<div class="sheet-announcement-body" dir="auto">${esc(a.body)}</div>` : ''}
-        ${a.names.trim() ? `<div class="sheet-announcement-names" dir="auto">${esc(a.names)}</div>` : ''}
+        ${announcementDetailsHTML(a)}
       </section>`).join('');
     requestFit();
+  }
+  function announcementDetailsHTML(a) {
+    const body = a.body ? `<div class="sheet-announcement-body" dir="auto">${esc(a.body)}</div>` : '';
+    const name = a.names.trim();
+    const sponsored = a.bookingWeek || /^(?:shalosh|sholosh)\s+seudos$/i.test(a.title.trim());
+    const nameText = sponsored && name && !/^sponsored\s+by\b/i.test(name) ? `Sponsored by ${name}` : name;
+    const names = nameText ? `<div class="sheet-announcement-names" dir="auto">${esc(nameText)}</div>` : '';
+    return sponsored ? names + body : body + names;
   }
   function fitZone(zone, maximum, minimum) {
     const content = zone.firstElementChild;

@@ -72,7 +72,7 @@ function normalizeTime(v) {
 
 function fmtDateTime(value, zmanType = 'other') {
   if (!value || value === 'N/A') return '';
-  // Standard nearest-minute display uses the exact instant (30 seconds rounds up).
+  // Astronomical display: Shkiah/Plag floor; everything else rounds nearest.
   // Only astronomical zmanim use zmanType; fixed shul times and derived
   // minyan schedules retain their own rounding and offset rules.
   const d = window.ZmanimRounding.roundZmanInstant(value, zmanType);
@@ -119,8 +119,8 @@ function loadEngine() {
 
   const known = localISO(state.friday) === '2026-09-18';
   const checks = [
-    ['Fri Shkia', friday.SeaLevelSunset, known ? '7:00' : null],
-    ['Shab Shkia', shabbos.SeaLevelSunset, known ? '6:58' : null],
+    ['Fri Shkia', friday.SeaLevelSunset, known ? '7:00' : null, 'shkiah'],
+    ['Shab Shkia', shabbos.SeaLevelSunset, known ? '6:58' : null, 'shkiah'],
     ['KS MGA 72', shabbos.SofZmanShmaMGA72Minutes, known ? '9:09' : null],
     ['KS GRA', shabbos.SofZmanShmaGRA, known ? '9:45' : null],
     ['Tzeis 72', shabbos.Tzais72 || shabbos.Tzais72Minutes, known ? '8:11' : null, 'nightfall']
@@ -179,9 +179,9 @@ function automaticTime(row) {
   const offset = String(row.offset || '').toLowerCase();
   const direction = offset.includes('after') ? 1 : -1;
   mins += direction * amount;
-  // Display-only direct zmanim follow standard nearest-minute rounding.
-  // A shul Maariv scheduled *at* Tzeis must still not begin before the
-  // unrounded instant: retain its ceil for minyan eligibility only.
+  // Direct Shkiah and Plag are floored for display; other direct zmanim
+  // round nearest. A minyan scheduled at Tzeis remains subject to its
+  // separate no-earlier-than-the-exact-instant rule.
   const label = String(row.text || row.label || '');
   const source = String(row.from || '');
   const directZman = amount === 0 && !nearestMinutes(row) &&
@@ -189,7 +189,11 @@ function automaticTime(row) {
     /shkia|sunset|tzais|tzeis|nightfall|plag|sunrise|netz|neitz/i.test(source);
   const scheduledAtTzeis = amount === 0 && !nearestMinutes(row) &&
     /tzais|tzeis|nightfall/i.test(source);
-  mins = directZman ? Math.round(mins)
+  const floorDirectZman = directZman &&
+    /shkia|sunset|plag/i.test(source) &&
+    /shkia|sunset|plag|שקיע|פלג/i.test(label);
+  mins = floorDirectZman ? Math.floor(mins)
+    : directZman ? Math.round(mins)
     : scheduledAtTzeis ? Math.ceil(mins)
     : applyRounding(mins, row);
   return minutesToClock(mins);

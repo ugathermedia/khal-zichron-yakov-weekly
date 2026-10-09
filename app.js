@@ -70,10 +70,13 @@ function normalizeTime(v) {
   return String(v).replace(/^0/, '').trim();
 }
 
-function fmtDateTime(value) {
+function fmtDateTime(value, zmanType = 'other') {
   if (!value || value === 'N/A') return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
+  // MyZmanim's directed minute display rules apply to the exact instant.
+  // Only astronomical zmanim use zmanType; fixed shul times and derived
+  // minyan schedules retain their own rounding and offset rules.
+  const d = window.ZmanimRounding.roundZmanInstant(value, zmanType);
+  if (!d) return '';
   return new Intl.DateTimeFormat('en-US', {
     timeZone: LOCATION.timeZoneId,
     hour: 'numeric',
@@ -120,15 +123,15 @@ function loadEngine() {
     ['Shab Shkia', shabbos.SeaLevelSunset, known ? '6:58' : null],
     ['KS MGA 72', shabbos.SofZmanShmaMGA72Minutes, known ? '9:09' : null],
     ['KS GRA', shabbos.SofZmanShmaGRA, known ? '9:45' : null],
-    ['Tzeis 72', shabbos.Tzais72 || shabbos.Tzais72Minutes, known ? '8:10' : null]
+    ['Tzeis 72', shabbos.Tzais72 || shabbos.Tzais72Minutes, known ? '8:11' : null, 'nightfall']
   ];
 
-  state.diagnostics = checks.map(([label, raw, expected]) => `${label}: ${fmtDateTime(raw) || 'missing'}${expected ? ` (reference ${expected})` : ''}`);
+  state.diagnostics = checks.map(([label, raw, expected, zmanType]) => `${label}: ${fmtDateTime(raw, zmanType) || 'missing'}${expected ? ` (reference ${expected})` : ''}`);
   $('#diagnosticText').textContent = state.diagnostics.join('\n');
   $('#engineStatus').textContent = 'KosherZmanim ready';
 
   if (known) {
-    const pass = checks.every(([, raw, expected]) => !expected || fmtDateTime(raw) === expected);
+    const pass = checks.every(([, raw, expected, zmanType]) => !expected || fmtDateTime(raw, zmanType) === expected);
     $('#calibration').textContent = pass ? 'Sep 18–19 calibration ✓' : 'Calibration needs review';
   } else {
     $('#calibration').textContent = 'Engine active';
@@ -176,7 +179,12 @@ function automaticTime(row) {
   const offset = String(row.offset || '').toLowerCase();
   const direction = offset.includes('after') ? 1 : -1;
   mins += direction * amount;
-  mins = applyRounding(mins, row);
+  // A directly listed tzeis with no schedule offset must not be displayed
+  // earlier than the astronomical instant. Explicit :05/minyan row rounding
+  // is kept intact because it is a separate scheduling rule.
+  const directNightfall = amount === 0 && !nearestMinutes(row) &&
+    /tzais|tzeis|nightfall|צאת/i.test(String(row.from || '') + ' ' + String(row.text || row.label || ''));
+  mins = directNightfall ? Math.ceil(mins) : applyRounding(mins, row);
   return minutesToClock(mins);
 }
 
@@ -255,7 +263,7 @@ function supplementShabbos(rows) {
   }
 
   if (!result.some(r => /72/.test(`${r.raw?.text || ''} ${r.source || ''}`) || r.label === 'צאת הכוכבים ר״ת')) {
-    result.push({ label: 'צאת הכוכבים ר״ת', time: fmtDateTime(shab.Tzais72 || shab.Tzais72Minutes), source: 'KosherZmanim sunset +72' });
+    result.push({ label: 'צאת הכוכבים ר״ת', time: fmtDateTime(shab.Tzais72 || shab.Tzais72Minutes, 'nightfall'), source: 'KosherZmanim sunset +72' });
   }
 
   return result;

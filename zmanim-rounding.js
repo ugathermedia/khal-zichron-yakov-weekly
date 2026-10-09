@@ -14,7 +14,20 @@
     return new Date(round(millis / 60000) * 60000);
   }
 
-  const api = Object.freeze({ roundZmanInstant });
+  // Old full-week snapshots can preserve the floor-rounded astronomical Tzeis.
+  // Upgrade only that precise automatic display; leave other manual times alone.
+  function correctLegacyNightfallClock(savedClock, exactInstant, timeZoneId) {
+    if (typeof savedClock !== 'string' || !timeZoneId) return savedClock;
+    const earlier = roundZmanInstant(exactInstant, 'other');
+    const later = roundZmanInstant(exactInstant, 'nightfall');
+    if (!earlier || !later || earlier.getTime() === later.getTime()) return savedClock;
+    const format = date => new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZoneId, hour: 'numeric', minute: '2-digit', hour12: true
+    }).format(date).replace(/ (AM|PM)$/, '');
+    return savedClock.trim() === format(earlier) ? format(later) : savedClock;
+  }
+
+  const api = Object.freeze({ roundZmanInstant, correctLegacyNightfallClock });
   root.ZmanimRounding = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

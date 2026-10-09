@@ -30,6 +30,24 @@ Export PNG and Export JPEG download the complete weekly sheet at 2550 × 3300 pi
 
 The KosherZmanim/KosherJava-compatible calculation layer is active and calibrated for KZY's saved location. Weekly rules include seasonal Shabbos Mincha/shiur timing, weekday Shacharis adjustments, Rosh Chodesh and U.S. legal-holiday handling, and later-weekday Mincha calculated at a minimum 13 minutes before shkiah rounded down to the prior :05. The completed Succos 5787 planner is retained in the codebase but only appears when a Succos week is selected.
 
+## Directed minute rounding
+
+For astronomical zmanim displayed without seconds, use the MyZmanim display
+convention: Sunrise/Netz, Earliest Talis/Misheyakir, Earliest Mincha/Mincha
+Gedolah, and every Nightfall/Tzeis opinion are **rounded up** to the next minute;
+all other astronomical zmanim (including Shkiah, Sof Zman Krias Shema,
+Chatzos and Plag) are **rounded down**. Exact-minute instants remain unchanged.
+The reusable pure function is `ZmanimRounding.roundZmanInstant(value, type)`
+in `zmanim-rounding.js`, where `type` is one of `sunrise`, `earliest-talis`,
+`earliest-mincha`, `nightfall`, or `other`. Run
+`node tests/zmanim-rounding.test.js` to verify second and boundary behavior.
+
+Round only when displaying astronomical values; preserve their seconds in
+calculations. Shul minyan schedules, custom offsets, closest-five-minute
+rounding, manual overrides and Likras Shabbos rules remain independent.
+The Sunday Netz label, Shabbos Rabbeinu Tam, and archived Succos diagnostics
+use this directed display policy.
+
 ## Data sources
 
 - KZY schedule/configuration: `https://kzy.zmanimscreens.com/api/data`

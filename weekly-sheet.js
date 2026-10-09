@@ -548,7 +548,7 @@
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      exportStatus.textContent = `Downloaded ${filename} · ${outputWidth} × ${outputHeight} pixels${format === 'jpeg' ? ' · ' + (blob.size / 1000).toFixed(0) + ' KB (under 1 MB)' : ''}.`;
+      exportStatus.textContent = `Downloaded ${filename} · ${outputWidth} × ${outputHeight} pixels${format === 'jpeg' ? ' · ' + Math.floor(blob.size / 1000) + ' KB (under 1 MB)' : ''}.`;
     } catch (error) {
       exportStatus.textContent = `Could not export ${format.toUpperCase()}: ${error.message}`;
       exportStatus.classList.add('error');

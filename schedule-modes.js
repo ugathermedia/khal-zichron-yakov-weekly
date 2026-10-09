@@ -48,6 +48,7 @@
   function restoreZmanOverride(row, savedClock) {
     let exact = null;
     let direction = 'down';
+    let zmanType = 'other';
     const raw = row?.raw;
     const shabbos = state.engine?.shabbos || {};
     if (row?.source === 'KosherZmanim sunset +72' && row.label === 'צאת הכוכבים ר״ת') {
@@ -61,11 +62,21 @@
                !Number(raw.minutes || 0) && !nearestMinutes(raw) &&
                /shkia|sunset|tzais|tzeis|nightfall|plag|sunrise|netz|neitz|שקיע|צאת|פלג|ה?נץ/i.test(String(row.label || ''))) {
       exact = sourceZman(raw.from);
-      direction = /tzais|tzeis|nightfall|sunrise|netz|neitz/i.test(String(raw.from || '')) ? 'up' : 'down';
+      const from = String(raw.from || '');
+      const label = String(row.label || '');
+      if (/shkia|sunset/i.test(from) && /shkia|sunset|שקיע/i.test(label)) {
+        zmanType = 'shkiah';
+        direction = 'nearest'; // Previous automatic version rounded sunset to nearest.
+      } else if (/plag/i.test(from) && /plag|פלג/i.test(label)) {
+        zmanType = 'plag';
+        direction = 'nearest'; // Previous automatic version rounded plag to nearest.
+      } else {
+        direction = /tzais|tzeis|nightfall|sunrise|netz|neitz/i.test(from) ? 'up' : 'down';
+      }
     }
     if (!exact || !window.ZmanimRounding?.correctLegacyZmanClock) return savedClock;
-    if (row.time !== fmtDateTime(exact)) return savedClock;
-    return window.ZmanimRounding.correctLegacyZmanClock(savedClock, exact, LOCATION.timeZoneId, direction);
+    if (row.time !== fmtDateTime(exact, zmanType)) return savedClock;
+    return window.ZmanimRounding.correctLegacyZmanClock(savedClock, exact, LOCATION.timeZoneId, direction, zmanType);
   }
 
   // Replace index-based overrides with stable row keys so schedule modes can

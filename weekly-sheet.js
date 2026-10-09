@@ -236,10 +236,15 @@
     const ok = announcementsFit && scheduleFits && headerFits;
     const overflowing = [!announcementsFit && 'Announcements', !scheduleFits && 'Zmanim', !headerFits && 'Header'].filter(Boolean);
     fitStatus.classList.toggle('error', !ok || !!calendarError);
-    fitStatus.textContent = calendarError ? `Parsha / Mevorchim calendar unavailable: ${calendarError}. Reload the page to retry.` : !ready ? 'Waiting for the complete weekly schedule and calendar. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : `${overflowing.join(' and ')} ${overflowing.length === 1 ? 'does' : 'do'} not fit on one page, even after automatic fitting. Shorten the text or uncheck an announcement’s “Show on sheet” box. Your saved text is kept.`;
+    fitStatus.textContent = calendarError ? `Parsha / Mevorchim calendar unavailable: ${calendarError}. Reload the page to retry.` : !ready ? 'Waiting for the complete weekly schedule and calendar. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : `The ${overflowing.join(' and ')} section${overflowing.length === 1 ? '' : 's'} ${overflowing.length === 1 ? 'does' : 'do'} not fit on one page, even after automatic fitting. Shorten the text or uncheck an announcement’s “Show on sheet” box. Your saved text is kept.`;
     outputHint.hidden = ready && ok;
     outputHint.textContent = ready && ok ? '' : fitStatus.textContent;
     outputHint.classList.toggle('error', !ok || !!calendarError);
+    if (ready && ok && /^Cannot (print|export) yet:/.test(exportStatus.textContent)) {
+      exportStatus.hidden = true;
+      exportStatus.textContent = '';
+      exportStatus.classList.remove('error');
+    }
     // A click must explain why output is blocked, rather than silently doing nothing.
     // Disable only while an actual operation is in progress.
     disableOutputs(backgroundPending || exportPending);

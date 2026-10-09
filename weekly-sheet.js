@@ -524,9 +524,21 @@
         backgroundColor: '#ffffff', style: { transform: 'none', boxShadow: 'none' }
       });
       const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-      const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not encode the image.')), mime, 0.95);
-      });
+      let blob;
+      let outputWidth = canvas.width;
+      let outputHeight = canvas.height;
+      if (format === 'jpeg') {
+        if (!window.WeeklyJpegExport?.compressToLimit) throw new Error('JPEG compressor did not load. Refresh the page and retry.');
+        const compressed = await window.WeeklyJpegExport.compressToLimit(canvas);
+        blob = compressed.blob;
+        outputWidth = compressed.width;
+        outputHeight = compressed.height;
+        if (blob.size >= 1000000) throw new Error('JPEG exceeds the 1 MB file-size limit.');
+      } else {
+        blob = await new Promise((resolve, reject) => {
+          canvas.toBlob(result => result ? resolve(result) : reject(new Error('Could not encode the image.')), mime);
+        });
+      }
       if (blob.type !== mime) throw new Error('This browser could not encode the requested image format.');
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -536,7 +548,7 @@
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
-      exportStatus.textContent = `Downloaded ${filename} · 2550 × 3300 pixels.`;
+      exportStatus.textContent = `Downloaded ${filename} · ${outputWidth} × ${outputHeight} pixels${format === 'jpeg' ? ' · ' + Math.floor(blob.size / 1000) + ' KB (under 1 MB)' : ''}.`;
     } catch (error) {
       exportStatus.textContent = `Could not export ${format.toUpperCase()}: ${error.message}`;
       exportStatus.classList.add('error');

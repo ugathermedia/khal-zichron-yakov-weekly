@@ -23,3 +23,5 @@ jobs:
           node --check succos-planner.js
       - name: Test directed minute rounding
         run: node tests/zmanim-rounding.test.js
+      - name: Test conditional kollel Mincha
+        run: node tests/kollel-mincha.test.js

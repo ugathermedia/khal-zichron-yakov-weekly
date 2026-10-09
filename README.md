@@ -57,3 +57,25 @@ use this directed display policy.
 ## Affinity workflow target
 
 Place `KZY-Weekly-Zmanim.svg` into Affinity Publisher as a **linked** resource. Each week's export uses the same filename so the placed panel can be updated without Data Merge or backwards-Hebrew text boxes.
+
+## Kollel Mincha
+
+An additional 1:15 PM Mincha is automatic Sunday–Thursday during the estimated
+kollel zman, only when 1:15:00 PM is at or after KosherZmanim's standard GRA
+`MinchaGedola` for that individual date in America/New_York. Comparison uses
+the underlying seconds; the editor rounds the earliest-time display upward.
+Missing Mincha Gedola omits the additional minyan. Existing 1:45 and later
+Mincha remain, with qualifying times combined chronologically on one line.
+Days are grouped only after applying eligibility, so a midweek zman start or
+a Mincha Gedola cutoff splits the affected days correctly in all exports.
+
+Calendar defaults: 1 Cheshvan through the end of Adar (including both Adars
+in leap years), 1 Iyar through 8 Av, and 1 Elul through 8 Tishrei. Yom Tov is
+excluded. These are provisional typical zman boundaries, not a verified
+calendar for this kollel. The confirmed start is Monday October 12, 2026
+(1 Cheshvan); Sunday October 11 is omitted. Each date has an Auto / In session /
+Out of session selector, saved with the existing weekly plan in this browser.
+Overrides change kollel attendance only; they never bypass Mincha Gedola or
+the Sunday–Thursday/Yom Tov restrictions. Clearing overrides restores Auto.
+The former unconditional extra-Mincha field is replaced; its old stored value
+is no longer used. Run `node tests/kollel-mincha.test.js` for boundary checks.

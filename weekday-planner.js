@@ -1,7 +1,6 @@
 (() => {
   const MODE_KEY = 'kzy-weekly:weekday-mincha-mode';
   const OFFSET_KEY = 'kzy-weekly:weekday-exact-offset';
-  const ADDITIONAL_MINCHA_KEY = 'kzy-weekly:weekday-additional-mincha';
   const PLAN_PREFIX = 'kzy-weekly:weekday-plan:';
   const rcCache = new Map();
   // Confirmed shul schedule exceptions to automatic legal-holiday minyanim.
@@ -21,7 +20,6 @@
     const n = Number(localStorage.getItem(OFFSET_KEY) || 15);
     return [13,14,15].includes(n) ? n : 15;
   };
-  const getAdditionalMincha = () => (localStorage.getItem(ADDITIONAL_MINCHA_KEY) || '').trim();
   const planKey = () => PLAN_PREFIX + localISO(state.friday);
   const loadPlan = () => {
     try { return JSON.parse(localStorage.getItem(planKey()) || '{"days":{}}'); }
@@ -215,8 +213,46 @@
     return (h + (part === 'pm' ? 12 : 0)) * 60 + Number(m[2]);
   }
 
+  // Calendar defaults, not a claim about this kollel's exact vacation dates.
+  // Build a civil-date anchor so Hebrew dates do not depend on the browser zone.
+  function kollelCalendar(date) {
+    const anchor = new Date(localISO(date) + 'T12:00:00Z');
+    const parts = new Intl.DateTimeFormat('en-u-ca-hebrew', {
+      timeZone: 'UTC', month: 'long', day: 'numeric'
+    }).formatToParts(anchor);
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = Number(parts.find(p => p.type === 'day')?.value);
+    const winter = ['Heshvan', 'Kislev', 'Tevet', 'Shevat', 'Adar', 'Adar I', 'Adar II'].includes(month);
+    const summer = ['Iyar', 'Sivan', 'Tamuz'].includes(month) || (month === 'Av' && day <= 8);
+    const elul = month === 'Elul' || (month === 'Tishri' && day >= 3 && day <= 8);
+    const yomTov = (month === 'Sivan' && [6, 7].includes(day)) ||
+      (month === 'Tishri' && [1, 2, 10, 15, 16, 22, 23].includes(day)) ||
+      (month === 'Nisan' && [15, 16, 21, 22].includes(day));
+    return { inSession: winter || summer || elul, yomTov };
+  }
+
+  function kollelMincha(date, manual = {}) {
+    const calendar = kollelCalendar(date);
+    const inSession = hasOwn(manual, 'kollelInSession') ? !!manual.kollelInSession : calendar.inSession;
+    const base = { inSession, automatic: !hasOwn(manual, 'kollelInSession'), time: '', earliest: '' };
+    if ([5, 6].includes(date.getDay())) return { ...base, reason: 'Sunday–Thursday only' };
+    if (calendar.yomTov) return { ...base, reason: 'Yom Tov' };
+    if (!inSession) return { ...base, reason: 'Kollel out of session' };
+    // KosherZmanim's standard GRA Mincha Gedola. Compare unrounded seconds;
+    // 1:15:00 qualifies, but 1:15:00.001 does not. Missing data fails closed.
+    const earliest = getZmanim(date).MinchaGedola;
+    const instant = earliest ? new Date(earliest) : null;
+    const clock = instant && Number.isFinite(instant.getTime()) ? localClockParts(instant) : null;
+    if (!clock) return { ...base, reason: 'Mincha Gedola unavailable — omitted' };
+    const qualifies = clock.h * 3600000 + clock.m * 60000 + clock.s * 1000 + instant.getUTCMilliseconds() <= 13 * 3600000 + 15 * 60000;
+    return { ...base, earliest: fmtDateTime(earliest, 'earliest-mincha'),
+      time: qualifies ? '1:15' : '',
+      reason: qualifies ? 'Kollel 1:15' : '1:15 is before Mincha Gedola' };
+  }
+
   function combinedMinchaTimes(early, added, late) {
-    const times = [early, added, late].filter(Boolean);
+    const times = [early, added, late].filter(Boolean).filter((time, index, all) =>
+      all.findIndex(other => other === time || (Number.isFinite(minchaSortMinutes(time)) && minchaSortMinutes(other) === minchaSortMinutes(time))) === index);
     // Preserve original order until the optional extra Mincha is set.
     if (!added) return times.join(' · ');
     return times.sort((a, b) => minchaSortMinutes(a) - minchaSortMinutes(b)).join(' · ');
@@ -282,17 +318,18 @@
         weekdayPlanner: true
       });
 
+      const kollel = kollelMincha(d.date, manual);
       if (d.key !== 'fri') {
         const autoMincha = laterMincha(d.date);
         minchaRows.push({
           label: d.label,
           dayNames: [d.english],
-          time: String(manual.minchaCustom || '').trim() || autoMincha,
-          source: manual.minchaCustom
+          time: combinedMinchaTimes(board.minchaEarly, kollel.time, String(manual.minchaCustom || '').trim() || autoMincha),
+          source: 'Early Mincha fixed at ' + board.minchaEarly + ' · ' + kollel.reason + ' · ' + (manual.minchaCustom
             ? 'Manual later Mincha'
             : getMode() === 'exact'
               ? getOffset() + ' min before shkiah'
-              : 'Minimum 13 min before shkiah; rounded down to :05',
+              : 'Minimum 13 min before shkiah; rounded down to :05'),
           weekdayPlanner: true
         });
       }
@@ -300,7 +337,7 @@
       meta.push({
         ...d, dateKey, autoRc, holiday, auto845, early630, extra845,
         neitz: neitzTiming.neitz, earliestSunday: sunday?.earliest || '', neitzAdjusted, firstShacharis,
-        seasonalNeitzAdded, seasonalNeitz,
+        seasonalNeitzAdded, seasonalNeitz, kollel,
         shacharisCustom: manual.shacharisCustom || '',
         minchaCustom: manual.minchaCustom || ''
       });
@@ -311,13 +348,7 @@
       ...bundleMatchingDayRows(shacharisRows, 'Matching Shacharis times grouped'),
       ...(shacharisRows.some(row => row.neitzTimes.length) ? [{ footnote:true, label:'*Seasonal Neitz Minyan', time:'', source:'Weekday planner', weekdayPlanner:true }] : []),
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
-      ...bundleMatchingDayRows(minchaRows, 'Matching Mincha times grouped').map(row => ({
-        ...row,
-        time: combinedMinchaTimes(board.minchaEarly, getAdditionalMincha(), row.time),
-        source: 'Early Mincha fixed at ' + board.minchaEarly
-          + (getAdditionalMincha() ? ' · Additional Sun–Thu Mincha at ' + getAdditionalMincha() : '')
-          + ' · ' + row.source
-      })),
+      ...bundleMatchingDayRows(minchaRows, 'Matching Mincha times grouped'),
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
       { label:'מעריב', time:['שקיעה', board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY: at shkiah + fixed minyanim', weekdayPlanner:true }
     ];
@@ -374,11 +405,10 @@
           before shkiah
         </label>
       </div>
-      <label class="wp-added" for="weekdayAdditionalMincha">
-        <strong>Additional Sun–Thu Mincha</strong>
-        <input id="weekdayAdditionalMincha" type="text" inputmode="numeric" placeholder="e.g. 5:30" aria-label="Additional Sunday through Thursday Mincha time">
-        <small>Recurring time, saved in this browser. Leave blank to omit.</small>
-      </label>
+      <div class="wp-added"><strong>Kollel Mincha · 1:15 PM · Sun–Thu</strong>
+        <small>Only during zman and at or after Mincha Gedola. Use the daily selector for kollel exceptions.</small>
+      </div>
+      <div class="wp-note">Default zman: 1 Cheshvan–end of Adar; 1 Iyar–8 Av; 1 Elul–8 Tishrei. No Yom Tov. These are estimated kollel dates; override any exception below. Mincha Gedola uses the standard GRA calculation.</div>
       <div id="weekdayAdjustments"></div>
       <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before Neitz, rounded up to a whole minute, including custom times. An additional seasonal Neitz minyan qualifies when the calculated start is at least 5 minutes after an earlier minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. Its start is rounded to the nearest :05 and must remain at least 5 minutes from every other minyan. Matching days are bundled. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
@@ -395,18 +425,6 @@
       localStorage.setItem(OFFSET_KEY, e.target.value);
       await window.refresh();
     });
-    card.querySelector('#weekdayAdditionalMincha').addEventListener('change', async e => {
-      const value = e.target.value.trim();
-      if (value && !/^(?:1[0-2]|[1-9]):[0-5][0-9](?:\s*[pP][mM])?$/.test(value)) {
-        e.target.setCustomValidity('Enter an afternoon time like 5:30 or 5:30 PM.');
-        e.target.reportValidity();
-        return;
-      }
-      e.target.setCustomValidity('');
-      if (value) localStorage.setItem(ADDITIONAL_MINCHA_KEY, value);
-      else localStorage.removeItem(ADDITIONAL_MINCHA_KEY);
-      await window.refresh();
-    });
   }
 
   function updatePlannerUI() {
@@ -417,14 +435,13 @@
     });
     document.getElementById('weekdayExactOffset').value = String(getOffset());
     document.getElementById('weekdayExactOffset').disabled = mode !== 'exact';
-    document.getElementById('weekdayAdditionalMincha').value = getAdditionalMincha();
 
     const meta = state.weekdayPlannerMeta || [];
     const wrap = document.getElementById('weekdayAdjustments');
     wrap.innerHTML = `
       <table class="wp-table">
         <thead><tr>
-          <th>Day</th><th>6:30 first</th><th>+ 8:45</th><th>Custom Shacharis</th><th>Later Mincha override</th>
+          <th>Day</th><th>6:30 first</th><th>+ 8:45</th><th>Custom Shacharis</th><th>Later Mincha override</th><th>Kollel 1:15</th>
         </tr></thead>
         <tbody>
           ${meta.map(d => {
@@ -435,18 +452,26 @@
               <td><input type="checkbox" data-day="${d.dateKey}" data-field="extra845" ${d.extra845 ? 'checked' : ''}></td>
               <td><input class="wp-wide" type="text" data-day="${d.dateKey}" data-field="shacharisCustom" value="${esc(d.shacharisCustom)}" placeholder="e.g. 6:30 · 7:30 · 8:45"></td>
               <td>${d.key === 'fri' ? '—' : '<input class="wp-small" type="text" data-day="'+d.dateKey+'" data-field="minchaCustom" value="'+esc(d.minchaCustom)+'" placeholder="auto">'}</td>
+              <td>${d.key === 'fri' ? '—' : `<select data-day="${d.dateKey}" data-field="kollelInSession" aria-label="Kollel session ${d.english}">
+                <option value="" ${d.kollel.automatic ? 'selected' : ''}>Auto (${d.kollel.inSession ? 'in session' : 'out'})</option>
+                <option value="on" ${!d.kollel.automatic && d.kollel.inSession ? 'selected' : ''}>In session</option>
+                <option value="off" ${!d.kollel.automatic && !d.kollel.inSession ? 'selected' : ''}>Out of session</option>
+              </select><div class="wp-auto">${esc(d.kollel.reason)}${d.kollel.earliest ? ' · Mincha Gedola ' + esc(d.kollel.earliest) : ''}</div>`}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>`;
 
-    wrap.querySelectorAll('input[data-day]').forEach(input => {
+    wrap.querySelectorAll('input[data-day], select[data-day]').forEach(input => {
       const eventName = input.type === 'checkbox' ? 'change' : 'change';
       input.addEventListener(eventName, async () => {
         const plan = loadPlan();
         plan.days ||= {};
         plan.days[input.dataset.day] ||= {};
-        if (input.type === 'checkbox') {
+        if (input.dataset.field === 'kollelInSession') {
+          if (input.value === '') delete plan.days[input.dataset.day].kollelInSession;
+          else plan.days[input.dataset.day].kollelInSession = input.value === 'on';
+        } else if (input.type === 'checkbox') {
           plan.days[input.dataset.day][input.dataset.field] = input.checked;
         } else {
           const value = input.value.trim();

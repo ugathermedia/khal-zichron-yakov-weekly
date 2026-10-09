@@ -1,6 +1,7 @@
 (() => {
   const MODE_KEY = 'kzy-weekly:weekday-mincha-mode';
   const OFFSET_KEY = 'kzy-weekly:weekday-exact-offset';
+  const ADDITIONAL_MINCHA_KEY = 'kzy-weekly:weekday-additional-mincha';
   const PLAN_PREFIX = 'kzy-weekly:weekday-plan:';
   const rcCache = new Map();
   // Confirmed shul schedule exceptions to automatic legal-holiday minyanim.
@@ -20,6 +21,7 @@
     const n = Number(localStorage.getItem(OFFSET_KEY) || 15);
     return [13,14,15].includes(n) ? n : 15;
   };
+  const getAdditionalMincha = () => (localStorage.getItem(ADDITIONAL_MINCHA_KEY) || '').trim();
   const planKey = () => PLAN_PREFIX + localISO(state.friday);
   const loadPlan = () => {
     try { return JSON.parse(localStorage.getItem(planKey()) || '{"days":{}}'); }
@@ -205,6 +207,21 @@
     return bundled.map(({ _days, ...row }) => row);
   }
 
+  function minchaSortMinutes(value) {
+    const m = String(value || '').trim().match(/^(1[0-2]|[1-9]):([0-5][0-9])(?:\s*(am|pm))?$/i);
+    if (!m) return Number.POSITIVE_INFINITY;
+    const h = Number(m[1]) % 12;
+    const part = (m[3] || 'pm').toLowerCase();
+    return (h + (part === 'pm' ? 12 : 0)) * 60 + Number(m[2]);
+  }
+
+  function combinedMinchaTimes(early, added, late) {
+    const times = [early, added, late].filter(Boolean);
+    // Preserve original order until the optional extra Mincha is set.
+    if (!added) return times.join(' · ');
+    return times.sort((a, b) => minchaSortMinutes(a) - minchaSortMinutes(b)).join(' · ');
+  }
+
   async function buildWeekdayPlan() {
     const board = fixedFromBoard(state.weekday);
     const plan = loadPlan();
@@ -296,8 +313,10 @@
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...bundleMatchingDayRows(minchaRows, 'Matching Mincha times grouped').map(row => ({
         ...row,
-        time: [board.minchaEarly, row.time].filter(Boolean).join(' · '),
-        source: 'Early Mincha fixed at ' + board.minchaEarly + ' · ' + row.source
+        time: combinedMinchaTimes(board.minchaEarly, getAdditionalMincha(), row.time),
+        source: 'Early Mincha fixed at ' + board.minchaEarly
+          + (getAdditionalMincha() ? ' · Additional Sun–Thu Mincha at ' + getAdditionalMincha() : '')
+          + ' · ' + row.source
       })),
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
       { label:'מעריב', time:['שקיעה', board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY: at shkiah + fixed minyanim', weekdayPlanner:true }
@@ -322,6 +341,9 @@
         #weekdayPlannerCard .wp-btn.active{background:#18263e;color:white;border-color:#18263e}
         #weekdayPlannerCard select,#weekdayPlannerCard input[type=text]{border:1px solid #cbd2dc;border-radius:7px;padding:6px 8px;background:white}
         #weekdayPlannerCard .wp-offset{display:flex;align-items:center;gap:7px;font-size:12px;color:#536070}
+        #weekdayPlannerCard .wp-added{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#536070}
+        #weekdayPlannerCard .wp-added input{width:98px}
+        #weekdayPlannerCard .wp-added small{font-size:11px;color:#687386}
         #weekdayPlannerCard .wp-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
         #weekdayPlannerCard .wp-table th{text-align:left;color:#6b7280;font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:6px;border-bottom:1px solid #d7dbe2}
         #weekdayPlannerCard .wp-table td{padding:7px 6px;border-bottom:1px solid #eceff3;vertical-align:middle}
@@ -352,6 +374,11 @@
           before shkiah
         </label>
       </div>
+      <label class="wp-added" for="weekdayAdditionalMincha">
+        <strong>Additional Sun–Thu Mincha</strong>
+        <input id="weekdayAdditionalMincha" type="text" inputmode="numeric" placeholder="e.g. 5:30" aria-label="Additional Sunday through Thursday Mincha time">
+        <small>Recurring time, saved in this browser. Leave blank to omit.</small>
+      </label>
       <div id="weekdayAdjustments"></div>
       <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before Neitz, rounded up to a whole minute, including custom times. An additional seasonal Neitz minyan qualifies when the calculated start is at least 5 minutes after an earlier minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. Its start is rounded to the nearest :05 and must remain at least 5 minutes from every other minyan. Matching days are bundled. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
@@ -368,6 +395,18 @@
       localStorage.setItem(OFFSET_KEY, e.target.value);
       await window.refresh();
     });
+    card.querySelector('#weekdayAdditionalMincha').addEventListener('change', async e => {
+      const value = e.target.value.trim();
+      if (value && !/^(?:1[0-2]|[1-9]):[0-5][0-9](?:\s*[pP][mM])?$/.test(value)) {
+        e.target.setCustomValidity('Enter an afternoon time like 5:30 or 5:30 PM.');
+        e.target.reportValidity();
+        return;
+      }
+      e.target.setCustomValidity('');
+      if (value) localStorage.setItem(ADDITIONAL_MINCHA_KEY, value);
+      else localStorage.removeItem(ADDITIONAL_MINCHA_KEY);
+      await window.refresh();
+    });
   }
 
   function updatePlannerUI() {
@@ -378,6 +417,7 @@
     });
     document.getElementById('weekdayExactOffset').value = String(getOffset());
     document.getElementById('weekdayExactOffset').disabled = mode !== 'exact';
+    document.getElementById('weekdayAdditionalMincha').value = getAdditionalMincha();
 
     const meta = state.weekdayPlannerMeta || [];
     const wrap = document.getElementById('weekdayAdjustments');

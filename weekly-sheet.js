@@ -21,6 +21,7 @@
   let calendarLoading = false;
   let calendarError = '';
   let sponsorRequest = 0;
+  let announcementDrag = null;
 
   const weekKey = () => state.friday ? localISO(state.friday) : '';
   const emptyDraft = () => ({ title: '', announcements: [] });
@@ -55,14 +56,14 @@
     renderSheet();
   }
   function drawEditor() {
+    finishAnnouncementDrag(false);
     document.getElementById('sheetTitleInput').value = draft.title;
     editor.innerHTML = draft.announcements.map((a, i) => `
       <div class="announcement-card" data-announcement="${i}">
         <div class="announcement-card-head">
           <label><input type="checkbox" data-property="visible" ${a.visible ? 'checked' : ''}> Show on sheet</label>
           <div class="announcement-card-tools">
-            <button type="button" data-action="up" aria-label="Move announcement ${i + 1} up" ${i === 0 ? 'disabled' : ''}>↑</button>
-            <button type="button" data-action="down" aria-label="Move announcement ${i + 1} down" ${i === draft.announcements.length - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" class="announcement-drag-handle" aria-label="Reorder announcement ${i + 1}. Drag or use Up and Down arrow keys." title="Drag to reorder · keyboard: ↑ / ↓" ${draft.announcements.length < 2 ? 'disabled' : ''}><span aria-hidden="true">⠿</span> Move</button>
             <button type="button" data-action="delete" aria-label="Delete announcement ${i + 1}">Delete</button>
           </div>
         </div>
@@ -135,7 +136,7 @@
       announcement.bookingValues = values;
       if (index >= 0) draft.announcements[index] = announcement;
       else index = draft.announcements.push(announcement) - 1;
-      // Apply the top position once, then respect the editor's move buttons.
+      // Apply the top position once, then respect the editor's saved order.
       if (!previous?.bookingTopDefault && index > 0) draft.announcements.unshift(...draft.announcements.splice(index, 1));
       drawEditor(); save();
       sponsorStatus.textContent = 'Sponsor synced from the signup form. Local edits and visibility are kept.';
@@ -252,15 +253,102 @@
   });
   editor.addEventListener('click', e => {
     const button = e.target.closest('[data-action]');
-    if (!button) return;
+    if (!button || button.dataset.action !== 'delete') return;
     const i = Number(button.closest('[data-announcement]').dataset.announcement);
-    if (button.dataset.action === 'delete') draft.announcements.splice(i, 1);
-    else {
-      const j = i + (button.dataset.action === 'up' ? -1 : 1);
-      if (j < 0 || j >= draft.announcements.length) return;
-      [draft.announcements[i], draft.announcements[j]] = [draft.announcements[j], draft.announcements[i]];
-    }
+    draft.announcements.splice(i, 1);
     drawEditor(); save();
+  });
+
+  function moveAnnouncement(from, to) {
+    if (from === to || to < 0 || to >= draft.announcements.length) return;
+    draft.announcements.splice(to, 0, ...draft.announcements.splice(from, 1));
+    drawEditor(); save();
+    editor.children[to].querySelector('.announcement-drag-handle').focus({ preventScroll: true });
+  }
+  function clearDropMarkers() {
+    editor.querySelectorAll('.drop-before,.drop-after').forEach(card => card.classList.remove('drop-before', 'drop-after'));
+  }
+  function updateAnnouncementDrop() {
+    const drag = announcementDrag;
+    if (!drag?.active) return;
+    clearDropMarkers();
+    const cards = [...editor.children].filter(card => card !== drag.card);
+    const next = cards.find(card => {
+      const rect = card.getBoundingClientRect();
+      return drag.y < rect.top + rect.height / 2;
+    });
+    drag.to = next ? cards.indexOf(next) : cards.length;
+    drag.over = drag.x >= editor.getBoundingClientRect().left - 24 && drag.x <= editor.getBoundingClientRect().right + 24;
+    if (drag.over && drag.to !== drag.from) {
+      (next || cards[cards.length - 1])?.classList.add(next ? 'drop-before' : 'drop-after');
+    }
+    drag.badge.style.left = Math.min(window.innerWidth - drag.badge.offsetWidth - 8, Math.max(8, drag.x + 14)) + 'px';
+    drag.badge.style.top = Math.max(8, Math.min(window.innerHeight - 50, drag.y + 14)) + 'px';
+  }
+  function scrollAnnouncementDrag() {
+    const drag = announcementDrag;
+    if (!drag?.active) return;
+    if (drag.over) {
+      const speed = drag.y < 70 ? -12 : drag.y > window.innerHeight - 70 ? 12 : 0;
+      if (speed) window.scrollBy(0, speed);
+    }
+    updateAnnouncementDrop();
+    drag.frame = requestAnimationFrame(scrollAnnouncementDrag);
+  }
+  function finishAnnouncementDrag(commit) {
+    const drag = announcementDrag;
+    if (!drag) return;
+    announcementDrag = null;
+    cancelAnimationFrame(drag.frame);
+    drag.badge?.remove();
+    drag.card.classList.remove('is-dragging');
+    document.body.classList.remove('announcement-dragging');
+    clearDropMarkers();
+    if (drag.handle.hasPointerCapture(drag.pointerId)) drag.handle.releasePointerCapture(drag.pointerId);
+    if (commit && drag.active && drag.over && drag.week === currentWeek) moveAnnouncement(drag.from, drag.to);
+  }
+  editor.addEventListener('pointerdown', e => {
+    const handle = e.target.closest('.announcement-drag-handle');
+    if (!handle || handle.disabled || e.button !== 0 || !e.isPrimary) return;
+    finishAnnouncementDrag(false);
+    const card = handle.closest('[data-announcement]');
+    announcementDrag = { handle, card, pointerId: e.pointerId, from: Number(card.dataset.announcement),
+      week: currentWeek, startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY, active: false };
+    handle.setPointerCapture(e.pointerId);
+  });
+  editor.addEventListener('pointermove', e => {
+    const drag = announcementDrag;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (!drag.active && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) >= 5) {
+      drag.active = true;
+      drag.badge = document.createElement('div');
+      drag.badge.className = 'announcement-drag-badge';
+      drag.badge.textContent = draft.announcements[drag.from].title || 'Announcement ' + (drag.from + 1);
+      document.body.appendChild(drag.badge);
+      drag.card.classList.add('is-dragging');
+      document.body.classList.add('announcement-dragging');
+      updateAnnouncementDrop();
+      scrollAnnouncementDrag();
+    }
+    updateAnnouncementDrop();
+  });
+  editor.addEventListener('pointerup', e => {
+    if (e.pointerId === announcementDrag?.pointerId) finishAnnouncementDrag(true);
+  });
+  for (const event of ['pointercancel', 'lostpointercapture']) editor.addEventListener(event, e => {
+    if (e.pointerId === announcementDrag?.pointerId) finishAnnouncementDrag(false);
+  });
+  window.addEventListener('blur', () => finishAnnouncementDrag(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && announcementDrag) finishAnnouncementDrag(false);
+  });
+  editor.addEventListener('keydown', e => {
+    if (!e.target.matches('.announcement-drag-handle') || !['ArrowUp', 'ArrowDown'].includes(e.key)) return;
+    e.preventDefault();
+    finishAnnouncementDrag(false);
+    const from = Number(e.target.closest('[data-announcement]').dataset.announcement);
+    moveAnnouncement(from, from + (e.key === 'ArrowUp' ? -1 : 1));
   });
   document.getElementById('sheetTitleInput').addEventListener('input', e => { draft.title = e.target.value; save(); });
   document.getElementById('addAnnouncement').onclick = () => {

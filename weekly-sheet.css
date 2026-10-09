@@ -37,6 +37,17 @@
 .announcement-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;font-size:12px}
 .announcement-card-tools{display:flex;gap:4px}
 .announcement-card-tools button{padding:4px 7px}
+.announcement-drag-handle{cursor:grab;touch-action:none;user-select:none;display:flex;align-items:center;gap:5px}
+.announcement-drag-handle span{font-size:22px;line-height:1}
+.announcement-drag-handle:disabled{cursor:default;opacity:.45}
+.announcement-drag-handle:focus-visible{outline:2px solid #52749b;outline-offset:3px}
+.announcement-card{position:relative}
+.announcement-card.is-dragging{opacity:.4}
+.announcement-card.drop-before:before,.announcement-card.drop-after:after{content:"";position:absolute;left:0;right:0;height:3px;border-radius:3px;background:#52749b;pointer-events:none}
+.announcement-card.drop-before:before{top:-8px}
+.announcement-card.drop-after:after{bottom:-8px}
+.announcement-dragging,.announcement-dragging *{cursor:grabbing!important;user-select:none!important}
+.announcement-drag-badge{position:fixed;z-index:10000;max-width:min(320px,calc(100vw - 24px));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;padding:11px 16px;background:#24334e;color:white;border-radius:8px;box-shadow:0 6px 22px #18263e30;font:600 13px Arial,sans-serif}
 .sheet-editor-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .sponsor-booking-controls{padding:12px;border:1px solid #d9dde5;border-radius:7px;margin-bottom:14px;background:#fafaf9;font-size:12px}
 .sponsor-booking-controls a{color:#24334e;margin-right:10px}

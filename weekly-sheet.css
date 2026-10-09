@@ -20,6 +20,11 @@
 .sheet-row-time{direction:ltr;unicode-bidi:isolate;text-align:left;white-space:nowrap;font-weight:400;font-variant-numeric:tabular-nums;flex-shrink:0}
 .sheet-announcement{padding:0 0 .85em;margin:0 0 .85em;border-bottom:1px solid #cbd2d9;break-inside:avoid}
 .sheet-announcement:last-child{border:0}
+.sheet-announcements-compact .sheet-announcement{padding-bottom:.4em;margin-bottom:.4em}
+.sheet-announcements-compact .sheet-announcement:last-child{padding-bottom:0;margin-bottom:0}
+.sheet-announcements-compact .sheet-zone-content{line-height:1.25}
+.actions button:disabled{opacity:.45;cursor:wait}
+#sheetOutputHint,#sheetExportStatus{margin:12px 0 0;max-width:850px}
 .sheet-announcement h3{font-size:1.12em;line-height:1.25;margin:0 0 .25em;color:#24334e}
 .sheet-announcement-subtitle{font-size:.92em;font-weight:700;margin-bottom:.3em}
 .sheet-announcement-names{font-size:.92em;font-weight:700;margin-top:.35em}

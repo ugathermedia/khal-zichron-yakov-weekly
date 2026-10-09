@@ -9,6 +9,7 @@
   const status = document.getElementById('announcementSaveStatus');
   const fitStatus = document.getElementById('sheetFitStatus');
   const exportStatus = document.getElementById('sheetExportStatus');
+  const outputHint = document.getElementById('sheetOutputHint');
   const outputButtons = ['printWeeklySheet', 'exportWeeklyPng', 'exportWeeklyJpeg'].map(id => document.getElementById(id));
   const disableOutputs = disabled => outputButtons.forEach(button => { button.disabled = disabled; });
   let currentWeek = '';
@@ -213,7 +214,14 @@
   }
   function fitSheet() {
     if (!sheet.offsetWidth) return false;
-    const announcementsFit = fitZone(sheet.querySelector('.sheet-announcements'), 15, 12);
+    const announcements = sheet.querySelector('.sheet-announcements');
+    announcements.classList.remove('sheet-announcements-compact');
+    let announcementsFit = fitZone(announcements, 15, 12);
+    if (!announcementsFit) {
+      // Recover space between announcements before reducing type further.
+      announcements.classList.add('sheet-announcements-compact');
+      announcementsFit = fitZone(announcements, 15, 11);
+    }
     const scheduleFits = fitZone(sheet.querySelector('.sheet-zmanim'), 15.5, 12.5);
     const header = sheet.querySelector('.sheet-header-info');
     const title = document.getElementById('sheetTitle');
@@ -226,9 +234,15 @@
     const headerFits = header.scrollHeight <= header.clientHeight + 1 && header.scrollWidth <= header.clientWidth + 1;
     const ready = !!state.raw && !!state.engine && document.getElementById('status').textContent === 'KZY loaded' && !calendarLoading && !calendarError;
     const ok = announcementsFit && scheduleFits && headerFits;
-    fitStatus.classList.toggle('error', !ok);
-    fitStatus.textContent = calendarError ? `Parsha / Mevorchim calendar unavailable: ${calendarError}. Reload the page to retry.` : !ready ? 'Waiting for the complete weekly schedule and calendar. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : 'Too much content for one page. Shorten the announcements or schedule before printing.';
-    disableOutputs(!ready || !ok || backgroundPending || exportPending);
+    const overflowing = [!announcementsFit && 'Announcements', !scheduleFits && 'Zmanim', !headerFits && 'Header'].filter(Boolean);
+    fitStatus.classList.toggle('error', !ok || !!calendarError);
+    fitStatus.textContent = calendarError ? `Parsha / Mevorchim calendar unavailable: ${calendarError}. Reload the page to retry.` : !ready ? 'Waiting for the complete weekly schedule and calendar. Refresh if it does not load.' : ok ? 'One-page preview. All content fits above the footer.' : `${overflowing.join(' and ')} ${overflowing.length === 1 ? 'does' : 'do'} not fit on one page, even after automatic fitting. Shorten the text or uncheck an announcement’s “Show on sheet” box. Your saved text is kept.`;
+    outputHint.hidden = ready && ok;
+    outputHint.textContent = ready && ok ? '' : fitStatus.textContent;
+    outputHint.classList.toggle('error', !ok || !!calendarError);
+    // A click must explain why output is blocked, rather than silently doing nothing.
+    // Disable only while an actual operation is in progress.
+    disableOutputs(backgroundPending || exportPending);
     return ready && ok;
   }
   function scalePreview() {
@@ -452,15 +466,23 @@
   }
   document.getElementById('printWeeklySheet').onclick = async () => {
     if (backgroundPending || exportPending) return;
+    exportStatus.hidden = false;
+    exportStatus.classList.remove('error');
+    exportStatus.textContent = 'Preparing Print / Save PDF…';
     renderSheet();
     try {
       if (document.fonts) await document.fonts.ready;
       await background.decode();
-      if (!fitSheet()) return;
+      if (!fitSheet()) {
+        exportStatus.textContent = 'Cannot print yet: ' + fitStatus.textContent;
+        exportStatus.classList.add('error');
+        return;
+      }
       mountPrintSheet();
       await printMount.querySelector('img').decode();
+      exportStatus.textContent = 'Opening the print dialog. Choose “Save as PDF” to download a PDF.';
       window.print();
-    } catch (error) { fitStatus.textContent = `Could not prepare printing: ${error.message}`; fitStatus.classList.add('error'); }
+    } catch (error) { exportStatus.textContent = `Could not prepare printing: ${error.message}`; exportStatus.classList.add('error'); }
   };
   async function exportSheet(format) {
     if (backgroundPending || exportPending) return;
@@ -476,7 +498,8 @@
       if (document.fonts) await document.fonts.ready;
       await background.decode();
       if (!fitSheet()) {
-        exportStatus.textContent = 'Export is waiting for a complete sheet that fits on one page.';
+        exportStatus.textContent = 'Cannot export yet: ' + fitStatus.textContent;
+        exportStatus.classList.add('error');
         return;
       }
       if (!window.htmlToImage?.toCanvas) throw new Error('Image exporter did not load. Refresh the page and retry.');

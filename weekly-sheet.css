@@ -14,7 +14,7 @@
 .sheet-date{font-size:.85em;margin-top:.15em}
 .sheet-section{font-size:1.04em;font-weight:700;margin:.65em 0 .2em;border-bottom:1px solid #8094a4;padding-bottom:.15em;text-align:right}
 .sheet-weekday-heading{border-bottom:2px solid #8094a4;margin-top:.85em}
-.sheet-row{display:flex;align-items:baseline;gap:.45em;padding:.22em 0;direction:rtl;break-inside:avoid}
+.sheet-row{display:flex;align-items:baseline;gap:.45em;padding:.18em 0;direction:rtl;break-inside:avoid}
 .sheet-row-label{max-width:62%;flex-shrink:1;min-width:0}
 .sheet-row-rule{border-bottom:1px solid #cbd2d9;flex:1;min-width:.4em;align-self:center}
 .sheet-row-time{direction:ltr;unicode-bidi:isolate;text-align:left;white-space:nowrap;font-weight:400;font-variant-numeric:tabular-nums;flex-shrink:0}

@@ -72,7 +72,7 @@ function normalizeTime(v) {
 
 function fmtDateTime(value, zmanType = 'other') {
   if (!value || value === 'N/A') return '';
-  // MyZmanim's directed minute display rules apply to the exact instant.
+  // Standard nearest-minute display uses the exact instant (30 seconds rounds up).
   // Only astronomical zmanim use zmanType; fixed shul times and derived
   // minyan schedules retain their own rounding and offset rules.
   const d = window.ZmanimRounding.roundZmanInstant(value, zmanType);
@@ -179,12 +179,19 @@ function automaticTime(row) {
   const offset = String(row.offset || '').toLowerCase();
   const direction = offset.includes('after') ? 1 : -1;
   mins += direction * amount;
-  // A directly listed tzeis with no schedule offset must not be displayed
-  // earlier than the astronomical instant. Explicit :05/minyan row rounding
-  // is kept intact because it is a separate scheduling rule.
-  const directNightfall = amount === 0 && !nearestMinutes(row) &&
-    /tzais|tzeis|nightfall|צאת/i.test(String(row.from || '') + ' ' + String(row.text || row.label || ''));
-  mins = directNightfall ? Math.ceil(mins) : applyRounding(mins, row);
+  // Display-only direct zmanim follow standard nearest-minute rounding.
+  // A shul Maariv scheduled *at* Tzeis must still not begin before the
+  // unrounded instant: retain its ceil for minyan eligibility only.
+  const label = String(row.text || row.label || '');
+  const source = String(row.from || '');
+  const directZman = amount === 0 && !nearestMinutes(row) &&
+    /shkia|sunset|tzais|tzeis|nightfall|plag|sunrise|netz|neitz|שקיע|צאת|צה["״\u05F4]?כ|פלג|ה?נץ/i.test(label) &&
+    /shkia|sunset|tzais|tzeis|nightfall|plag|sunrise|netz|neitz/i.test(source);
+  const scheduledAtTzeis = amount === 0 && !nearestMinutes(row) &&
+    /tzais|tzeis|nightfall/i.test(source);
+  mins = directZman ? Math.round(mins)
+    : scheduledAtTzeis ? Math.ceil(mins)
+    : applyRounding(mins, row);
   return minutesToClock(mins);
 }
 

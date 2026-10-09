@@ -93,7 +93,7 @@
     const tzais72 = z.Tzais72 || z.Tzais72Minutes;
     const plag = z.PlagHamincha || z.PlagHaminchaGRA;
 
-    const exact = (key, label, value, basis) => row(def.key, key, label, fmtRaw(value, key === 'candles72' ? 'nightfall' : 'other'), basis || 'KosherZmanim 0.9.0 / KosherJava port', 'astronomical');
+    const exact = (key, label, value, basis) => row(def.key, key, label, fmtRaw(value, key === 'shkiah' ? 'shkiah' : key === 'candles72' || key === 'tzais72' ? 'nightfall' : 'other'), basis || 'KosherZmanim 0.9.0 / KosherJava port', 'astronomical');
     const shifted = (key, label, value, mins, basis) => row(def.key, key, label, shift(value, mins), basis, 'rule');
     const fixed = (key, label, value, basis) => row(def.key, key, label, value, basis, 'fixed');
 
@@ -202,8 +202,8 @@
       ...def,
       raw: {
         sunrise: fmtRaw(sunrise, 'sunrise'),
-        plag: fmtRaw(plag),
-        sunset: fmtRaw(sunset),
+        plag: fmtRaw(plag, 'plag'),
+        sunset: fmtRaw(sunset, 'shkiah'),
         ksMga72: fmtRaw(ksMga72),
         ksGra: fmtRaw(ksGra),
         tzais50: fmtRaw(tzais50, 'nightfall'),

@@ -1,0 +1,25 @@
+name: Validate zmanim formatting
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check zmanim-rounding.js
+          node --check app.js
+          node --check weekday-planner.js
+          node --check succos-planner.js
+      - name: Test directed minute rounding
+        run: node tests/zmanim-rounding.test.js

@@ -52,8 +52,8 @@
     return clockFromLocalMinutes(Math.round(total / step) * step);
   }
 
-  function fmtRaw(value) {
-    return value ? fmtDateTime(value) : '—';
+  function fmtRaw(value, zmanType = 'other') {
+    return value ? fmtDateTime(value, zmanType) : '—';
   }
 
   function loadOverrides() {
@@ -93,7 +93,7 @@
     const tzais72 = z.Tzais72 || z.Tzais72Minutes;
     const plag = z.PlagHamincha || z.PlagHaminchaGRA;
 
-    const exact = (key, label, value, basis) => row(def.key, key, label, fmtRaw(value), basis || 'KosherZmanim 0.9.0 / KosherJava port', 'astronomical');
+    const exact = (key, label, value, basis) => row(def.key, key, label, fmtRaw(value, key === 'candles72' ? 'nightfall' : 'other'), basis || 'KosherZmanim 0.9.0 / KosherJava port', 'astronomical');
     const shifted = (key, label, value, mins, basis) => row(def.key, key, label, shift(value, mins), basis, 'rule');
     const fixed = (key, label, value, basis) => row(def.key, key, label, value, basis, 'fixed');
 
@@ -201,14 +201,14 @@
     return {
       ...def,
       raw: {
-        sunrise: fmtRaw(sunrise),
+        sunrise: fmtRaw(sunrise, 'sunrise'),
         plag: fmtRaw(plag),
         sunset: fmtRaw(sunset),
         ksMga72: fmtRaw(ksMga72),
         ksGra: fmtRaw(ksGra),
-        tzais50: fmtRaw(tzais50),
-        tzais85: fmtRaw(tzais85),
-        tzais72: fmtRaw(tzais72)
+        tzais50: fmtRaw(tzais50, 'nightfall'),
+        tzais85: fmtRaw(tzais85, 'nightfall'),
+        tzais72: fmtRaw(tzais72, 'nightfall')
       },
       rows
     };

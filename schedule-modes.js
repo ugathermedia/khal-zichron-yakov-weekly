@@ -42,22 +42,30 @@
     return `${group}:calc:${row?.label || ''}|${row?.source || ''}`;
   }
 
-  // Migrate obsolete floor-rounded Tzeis values saved with the former display.
-  // Do not touch fixed minyan times, different manual entries, or offsets.
-  function restoreNightfallOverride(row, savedClock) {
+  // Former display-rounding snapshots may mask regenerated zmanim.
+  // Only refresh a direct astronomical row when its saved minute matches
+  // the old automatically rounded value; leave other manual edits intact.
+  function restoreZmanOverride(row, savedClock) {
     let exact = null;
+    let direction = 'down';
     const raw = row?.raw;
-    if (row?.source === 'KosherZmanim sunset +72' && row?.label === 'צאת הכוכבים ר״ת') {
-      const shabbos = state.engine?.shabbos || {};
+    const shabbos = state.engine?.shabbos || {};
+    if (row?.source === 'KosherZmanim sunset +72' && row.label === 'צאת הכוכבים ר״ת') {
       exact = shabbos.Tzais72 || shabbos.Tzais72Minutes;
+      direction = 'up';
+    } else if (row?.source === 'KosherZmanim MGA fixed 72') {
+      exact = shabbos.SofZmanShmaMGA72Minutes;
+    } else if (row?.source === 'KosherZmanim GRA') {
+      exact = shabbos.SofZmanShmaGRA;
     } else if (raw && raw.type !== 'time' && raw.type !== 'text' &&
                !Number(raw.minutes || 0) && !nearestMinutes(raw) &&
-               /tzais|tzeis|nightfall|צאת/i.test(String(raw.from || ''))) {
+               /shkia|sunset|tzais|tzeis|nightfall|plag|sunrise|netz|neitz|שקיע|צאת|פלג|ה?נץ/i.test(String(row.label || ''))) {
       exact = sourceZman(raw.from);
+      direction = /tzais|tzeis|nightfall|sunrise|netz|neitz/i.test(String(raw.from || '')) ? 'up' : 'down';
     }
-    if (!exact || !window.ZmanimRounding?.correctLegacyNightfallClock) return savedClock;
-    if (row.time !== fmtDateTime(exact, 'nightfall')) return savedClock;
-    return window.ZmanimRounding.correctLegacyNightfallClock(savedClock, exact, LOCATION.timeZoneId);
+    if (!exact || !window.ZmanimRounding?.correctLegacyZmanClock) return savedClock;
+    if (row.time !== fmtDateTime(exact)) return savedClock;
+    return window.ZmanimRounding.correctLegacyZmanClock(savedClock, exact, LOCATION.timeZoneId, direction);
   }
 
   // Replace index-based overrides with stable row keys so schedule modes can
@@ -80,21 +88,21 @@
     if (o?.version === 2) {
       state.shabbos.forEach(r => {
         const v = o.shabbos?.[stableRowKey(r, 'shabbos')];
-        if (v != null) r.time = restoreNightfallOverride(r, v);
+        if (v != null) r.time = restoreZmanOverride(r, v);
       });
       state.weekday.forEach(r => {
         const v = o.weekday?.[stableRowKey(r, 'weekday')];
-        if (v != null) r.time = restoreNightfallOverride(r, v);
+        if (v != null) r.time = restoreZmanOverride(r, v);
       });
       return;
     }
 
     // Read legacy index-based saves, but future saves use stable keys.
     if (Array.isArray(o.shabbos)) {
-      o.shabbos.forEach((v, i) => { if (state.shabbos[i] && v != null) state.shabbos[i].time = restoreNightfallOverride(state.shabbos[i], v); });
+      o.shabbos.forEach((v, i) => { if (state.shabbos[i] && v != null) state.shabbos[i].time = restoreZmanOverride(state.shabbos[i], v); });
     }
     if (Array.isArray(o.weekday)) {
-      o.weekday.forEach((v, i) => { if (state.weekday[i] && v != null) state.weekday[i].time = restoreNightfallOverride(state.weekday[i], v); });
+      o.weekday.forEach((v, i) => { if (state.weekday[i] && v != null) state.weekday[i].time = restoreZmanOverride(state.weekday[i], v); });
     }
   };
 
@@ -116,12 +124,19 @@
 
   function seasonalMinchaTime() {
     const shkia = state.engine?.shabbos?.SeaLevelSunset;
-    const shown = fmtDateTime(shkia);
-    const mins = clockMinutes(shown);
-    if (mins == null) return '';
-    // At least 35 minutes before shkiah, rounded DOWN to the prior :05.
-    // This produces a 35–39 minute buffer (e.g. 6:58 shkiah -> 6:20).
-    return clockFromLocalMinutes(Math.floor((mins - 35) / 5) * 5);
+    if (!shkia) return '';
+    const d = new Date(shkia);
+    if (!Number.isFinite(d.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: LOCATION.timeZoneId, hour: '2-digit', minute: '2-digit',
+      second: '2-digit', hourCycle: 'h23'
+    }).formatToParts(d);
+    const get = type => Number(parts.find(p => p.type === type)?.value);
+    const exactMinutes = get('hour') * 60 + get('minute') +
+      get('second') / 60 + d.getUTCMilliseconds() / 60000;
+    // The :05 floor uses exact sunset, not rounded displayed Shkiah,
+    // preserving the minimum 35-minute buffer.
+    return clockFromLocalMinutes(Math.floor((exactMinutes - 35) / 5) * 5);
   }
 
   function shabbosShuvaDefaultTimes() {

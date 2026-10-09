@@ -1,26 +1,30 @@
-/* Minute-only astronomical zmanim use ordinary half-up display rounding.
- * Keep the exact instant for halachic eligibility, cutoffs, and shul scheduling.
- * Independent minyan rules (including explicit :05 modes) remain separate.
+/* Minute-only astronomical display: Shkiah and Plag always round down;
+ * all other zmanim round to the nearest minute (half-up).
+ * Exact instants remain unchanged for eligibility, offsets and minyan rules.
  */
 (function (root) {
   'use strict';
 
-  function roundZmanInstant(value) {
+  const ROUND_EARLIER = new Set(['shkiah', 'shkia', 'sunset', 'sea-level-sunset', 'sealevelsunset', 'plag', 'plag-hamincha', 'plaghamincha']);
+
+  function roundZmanInstant(value, zmanType = 'other') {
     if (value == null || value === '' || value === 'N/A') return null;
     const millis = value instanceof Date ? value.getTime() : new Date(value).getTime();
     if (!Number.isFinite(millis)) return null;
-    return new Date(Math.round(millis / 60000) * 60000);
+    const round = ROUND_EARLIER.has(String(zmanType).toLowerCase()) ? Math.floor : Math.round;
+    return new Date(round(millis / 60000) * 60000);
   }
 
   // An earlier version saved every displayed time, including auto times.
-  // Correct an old directional-rounding snapshot only when its clock matches
-  // the former auto value; leave other saved times and minyan entries alone.
-  function correctLegacyZmanClock(savedClock, exactInstant, timeZoneId, formerDirection) {
-    if (typeof savedClock !== 'string' || !timeZoneId || !['up', 'down'].includes(formerDirection)) return savedClock;
+  // Correct an old auto-rounding snapshot only when its clock matches the
+  // previous automatic display; leave other saved times and minyan entries alone.
+  function correctLegacyZmanClock(savedClock, exactInstant, timeZoneId, formerDirection, zmanType = 'other') {
+    if (typeof savedClock !== 'string' || !timeZoneId || !['up', 'down', 'nearest'].includes(formerDirection)) return savedClock;
     const exact = exactInstant instanceof Date ? exactInstant.getTime() : new Date(exactInstant).getTime();
     if (!Number.isFinite(exact)) return savedClock;
-    const oldMillis = (formerDirection === 'up' ? Math.ceil : Math.floor)(exact / 60000) * 60000;
-    const current = roundZmanInstant(exact);
+    const previousRound = formerDirection === 'up' ? Math.ceil : formerDirection === 'down' ? Math.floor : Math.round;
+    const oldMillis = previousRound(exact / 60000) * 60000;
+    const current = roundZmanInstant(exact, zmanType);
     if (!current || oldMillis === current.getTime()) return savedClock;
     const format = date => new Intl.DateTimeFormat('en-US', {
       timeZone: timeZoneId, hour: 'numeric', minute: '2-digit', hour12: true

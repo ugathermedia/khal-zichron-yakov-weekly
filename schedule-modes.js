@@ -42,6 +42,24 @@
     return `${group}:calc:${row?.label || ''}|${row?.source || ''}`;
   }
 
+  // Migrate obsolete floor-rounded Tzeis values saved with the former display.
+  // Do not touch fixed minyan times, different manual entries, or offsets.
+  function restoreNightfallOverride(row, savedClock) {
+    let exact = null;
+    const raw = row?.raw;
+    if (row?.source === 'KosherZmanim sunset +72' && row?.label === 'צאת הכוכבים ר״ת') {
+      const shabbos = state.engine?.shabbos || {};
+      exact = shabbos.Tzais72 || shabbos.Tzais72Minutes;
+    } else if (raw && raw.type !== 'time' && raw.type !== 'text' &&
+               !Number(raw.minutes || 0) && !nearestMinutes(raw) &&
+               /tzais|tzeis|nightfall|צאת/i.test(String(raw.from || ''))) {
+      exact = sourceZman(raw.from);
+    }
+    if (!exact || !window.ZmanimRounding?.correctLegacyNightfallClock) return savedClock;
+    if (row.time !== fmtDateTime(exact, 'nightfall')) return savedClock;
+    return window.ZmanimRounding.correctLegacyNightfallClock(savedClock, exact, LOCATION.timeZoneId);
+  }
+
   // Replace index-based overrides with stable row keys so schedule modes can
   // insert/remove special rows without shifting saved manual edits.
   window.saveOverrides = function saveOverridesStable() {
@@ -62,21 +80,21 @@
     if (o?.version === 2) {
       state.shabbos.forEach(r => {
         const v = o.shabbos?.[stableRowKey(r, 'shabbos')];
-        if (v != null) r.time = v;
+        if (v != null) r.time = restoreNightfallOverride(r, v);
       });
       state.weekday.forEach(r => {
         const v = o.weekday?.[stableRowKey(r, 'weekday')];
-        if (v != null) r.time = v;
+        if (v != null) r.time = restoreNightfallOverride(r, v);
       });
       return;
     }
 
     // Read legacy index-based saves, but future saves use stable keys.
     if (Array.isArray(o.shabbos)) {
-      o.shabbos.forEach((v, i) => { if (state.shabbos[i] && v != null) state.shabbos[i].time = v; });
+      o.shabbos.forEach((v, i) => { if (state.shabbos[i] && v != null) state.shabbos[i].time = restoreNightfallOverride(state.shabbos[i], v); });
     }
     if (Array.isArray(o.weekday)) {
-      o.weekday.forEach((v, i) => { if (state.weekday[i] && v != null) state.weekday[i].time = v; });
+      o.weekday.forEach((v, i) => { if (state.weekday[i] && v != null) state.weekday[i].time = restoreNightfallOverride(state.weekday[i], v); });
     }
   };
 

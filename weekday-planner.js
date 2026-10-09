@@ -152,7 +152,7 @@
     return {
       minutes: earliestMinutes, start: clockFromLocalMinutes(earliestMinutes),
       seasonalMinutes, seasonalStart: clockFromLocalMinutes(seasonalMinutes),
-      neitz: fmtDateTime(neitz)
+      neitz: fmtDateTime(neitz, 'sunrise')
     };
   }
 

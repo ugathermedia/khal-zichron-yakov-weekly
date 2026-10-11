@@ -93,7 +93,10 @@
     // on the public board. The board can contain Rosh Chodesh, Neitz, or
     // previously saved weekly overrides; none may become the next week's
     // regular defaults. Per-date exceptions still come from the planner.
-    const minchaEarly = rows.find(r => !r.section && /מנחה מוקדמת/.test(r.label || ''))?.time || '1:45';
+    // Permanent early Mincha is 1:45. The kollel's conditional 1:15 is an
+    // additional minyan, not a substitute; never adopt 1:15 from a board
+    // snapshot as the permanent early Mincha.
+    const minchaEarly = '1:45';
     const maariv = rows.filter(r => !r.section && r.label === 'מעריב').map(r => r.time).filter(Boolean);
     return {
       shacharisA: '6:45',

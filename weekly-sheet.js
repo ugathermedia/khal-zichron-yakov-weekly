@@ -25,20 +25,36 @@
   let announcementDrag = null;
 
   const weekKey = () => state.friday ? localISO(state.friday) : '';
-  const emptyDraft = () => ({ title: '', announcements: [] });
+  const emptyDraft = () => ({ title: '', announcements: [], dismissedRecurrenceIds: [] });
+  function newRecurrenceId() {
+    return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : 'rec-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
   function validDraft(value) {
     if (!value || typeof value !== 'object' || !Array.isArray(value.announcements)) throw new Error('Invalid announcement backup');
     return {
       title: String(value.title || ''),
-      announcements: value.announcements.map(a => ({
-        title: String(a.title || ''), body: String(a.body || ''),
-        subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false,
-        ...(typeof a.bookingWeek === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bookingWeek) ? {
-          bookingWeek: a.bookingWeek,
-          bookingTopDefault: a.bookingTopDefault === true,
-          bookingValues: { title: String(a.bookingValues?.title || ''), body: String(a.bookingValues?.body || ''), names: String(a.bookingValues?.names || '') }
-        } : {})
-      }))
+      dismissedRecurrenceIds: Array.isArray(value.dismissedRecurrenceIds)
+        ? [...new Set(value.dismissedRecurrenceIds.filter(id => typeof id === 'string' && id.length <= 120))]
+        : [],
+      announcements: value.announcements.map(a => {
+        const booked = typeof a.bookingWeek === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bookingWeek);
+        const repeatWeekly = !booked && a.repeatWeekly === true;
+        const recurrenceId = typeof a.recurrenceId === 'string' && a.recurrenceId.length <= 120
+          ? a.recurrenceId : (repeatWeekly ? newRecurrenceId() : '');
+        return {
+          title: String(a.title || ''), body: String(a.body || ''),
+          subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false,
+          repeatWeekly,
+          ...(recurrenceId ? { recurrenceId } : {}),
+          ...(booked ? {
+            bookingWeek: a.bookingWeek,
+            bookingTopDefault: a.bookingTopDefault === true,
+            bookingValues: { title: String(a.bookingValues?.title || ''), body: String(a.bookingValues?.body || ''), names: String(a.bookingValues?.names || '') }
+          } : {})
+        };
+      })
     };
   }
   function loadDraft(key) {
@@ -62,7 +78,12 @@
     editor.innerHTML = draft.announcements.map((a, i) => `
       <div class="announcement-card" data-announcement="${i}">
         <div class="announcement-card-head">
-          <label><input type="checkbox" data-property="visible" ${a.visible ? 'checked' : ''}> Show on sheet</label>
+          <div class="announcement-card-switches">
+            <label><input type="checkbox" data-property="visible" ${a.visible ? 'checked' : ''}> Show on sheet</label>
+            <label title="${a.bookingWeek ? 'Sponsorships are synced separately for each week.' : 'Copy this announcement into the next week; the copy remains fully editable.'}">
+              <input type="checkbox" data-property="repeatWeekly" ${a.repeatWeekly ? 'checked' : ''} ${a.bookingWeek ? 'disabled' : ''}> Repeat weekly
+            </label>
+          </div>
           <div class="announcement-card-tools">
             <button type="button" class="announcement-drag-handle" aria-label="Reorder announcement ${i + 1}. Drag or use Up and Down arrow keys." title="Drag to reorder · keyboard: ↑ / ↓" ${draft.announcements.length < 2 ? 'disabled' : ''}><span aria-hidden="true">⠿</span> Move</button>
             <button type="button" data-action="delete" aria-label="Delete announcement ${i + 1}">Delete</button>
@@ -80,6 +101,15 @@
     if (!next || next === currentWeek) return;
     currentWeek = next;
     draft = loadDraft(next);
+    const previousWeek = localISO(addDays(state.friday, -7));
+    const carried = window.AnnouncementRecurrence.carryOver(draft, loadDraft(previousWeek));
+    let carriedSaved = true;
+    if (carried) {
+      // Save the new week's independent copies immediately so revisiting the
+      // week never creates a duplicate. Previous week's data is unchanged.
+      try { localStorage.setItem(PREFIX + next, JSON.stringify(draft)); }
+      catch { carriedSaved = false; }
+    }
     calendarInfo = null;
     calendarLoading = true;
     calendarError = '';
@@ -99,7 +129,9 @@
       renderSheet();
     });
     drawEditor();
-    if (draft.announcements.length) status.textContent = 'Loaded this week’s saved announcements.';
+    if (carried && !carriedSaved) status.textContent = 'Recurring announcements loaded, but could not be saved. Download a backup.';
+    else if (carried) status.textContent = 'Carried over ' + carried + ' recurring announcement' + (carried === 1 ? '' : 's') + ' from the previous week. All fields remain editable.';
+    else if (draft.announcements.length) status.textContent = 'Loaded this week’s saved announcements.';
     refreshSponsorship();
   }
   async function refreshSponsorship() {
@@ -267,14 +299,21 @@
     const property = e.target.dataset.property;
     const card = e.target.closest('[data-announcement]');
     if (!property || !card) return;
-    draft.announcements[Number(card.dataset.announcement)][property] = property === 'visible' ? e.target.checked : e.target.value;
+    const announcement = draft.announcements[Number(card.dataset.announcement)];
+    if (property === 'repeatWeekly' && announcement.bookingWeek) return;
+    announcement[property] = property === 'visible' || property === 'repeatWeekly' ? e.target.checked : e.target.value;
+    if (property === 'repeatWeekly' && e.target.checked && !announcement.recurrenceId) announcement.recurrenceId = newRecurrenceId();
     save();
   });
   editor.addEventListener('click', e => {
     const button = e.target.closest('[data-action]');
     if (!button || button.dataset.action !== 'delete') return;
     const i = Number(button.closest('[data-announcement]').dataset.announcement);
-    draft.announcements.splice(i, 1);
+    const [removed] = draft.announcements.splice(i, 1);
+    if (removed?.recurrenceId) {
+      draft.dismissedRecurrenceIds ||= [];
+      if (!draft.dismissedRecurrenceIds.includes(removed.recurrenceId)) draft.dismissedRecurrenceIds.push(removed.recurrenceId);
+    }
     drawEditor(); save();
   });
 
@@ -372,17 +411,18 @@
   document.getElementById('sheetTitleInput').addEventListener('input', e => { draft.title = e.target.value; save(); });
   document.getElementById('addAnnouncement').onclick = () => {
     syncWeek();
-    draft.announcements.push({ title: '', subtitle: '', body: '', names: '', visible: true });
+    draft.announcements.push({ title: '', subtitle: '', body: '', names: '', visible: true, repeatWeekly: false });
     drawEditor(); save();
     editor.lastElementChild.querySelector('[data-property="title"]').focus();
   };
   document.getElementById('copyPreviousAnnouncements').onclick = () => {
     syncWeek();
     const previous = loadDraft(localISO(addDays(state.friday, -7)));
-    // Append so existing work is never overwritten by a copy operation.
-    draft.announcements.push(...previous.announcements.filter(a => !a.bookingWeek));
-    drawEditor(); save();
-    if (!previous.announcements.length) status.textContent = 'No saved announcements in the previous week.';
+    // Append only announcements that have not already been auto-carried;
+    // leave existing content, visibility, and saved order untouched.
+    const copied = window.AnnouncementRecurrence.copyPrevious(draft, previous);
+    if (copied) { drawEditor(); save(); }
+    else status.textContent = 'No additional announcements to copy from the previous week.';
   };
   document.getElementById('backupAnnouncements').onclick = () => {
     syncWeek();

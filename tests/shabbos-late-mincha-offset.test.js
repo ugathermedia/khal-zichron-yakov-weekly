@@ -26,14 +26,14 @@ const makeRows = (lateLabel = 'מנחה ב׳', earlyShabbosMincha = false) => [
   { label: 'שקיעה', time: '6:14' }
 ];
 
-function fixture({ setting = null, season = 'winter', store = null, lateLabel = 'מנחה ב׳', earlyShabbosMincha = false, special = 'normal' } = {}) {
+function fixture({ setting = null, season = 'winter', store = null, lateLabel = 'מנחה ב׳', earlyShabbosMincha = false, special = 'normal', sunsetInstant = sunset } = {}) {
   const saved = store || new Map();
   saved.set('kzy-weekly:season-mode', season);
   saved.set('kzy-weekly:special-mode:2026-10-16', special);
   if (setting !== null) saved.set('kzy-weekly:shabbos-late-mincha-minutes', String(setting));
   const state = {
     friday: new Date(friday),
-    engine: { shabbos: { SeaLevelSunset: sunset } },
+    engine: { shabbos: { SeaLevelSunset: sunsetInstant } },
     shabbos: makeRows(lateLabel, earlyShabbosMincha),
     weekday: [],
     diagnostics: []
@@ -75,7 +75,7 @@ assert.match(next.mincha.source, /at least 30 min/);
 // Screenshot fixture: Shabbos has both an earlier 2:15 Mincha and a later
 // 5:35 Mincha labelled just "מנחה". Previously the seasonal 30-minute
 // calculation never ran; it must now update Mincha and afternoon shiur.
-const screenshot = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true });
+const screenshot = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true, sunsetInstant: '2026-10-17T18:12:34-04:00' });
 assert.equal(screenshot.mode.lateShabbosMinchaIndex(), 4);
 const corrected = afterRules(screenshot);
 assert.equal(corrected.mincha.label, 'מנחה');

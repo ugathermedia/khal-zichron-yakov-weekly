@@ -65,8 +65,11 @@ async function fixture({ friday, manualDays = {}, earlyMinchaGedolaDates = {} })
   vm.runInNewContext(testSource, sandbox, { filename: 'weekday-planner.js' });
   await sandbox.window.__testPlanner.buildWeekdayPlan();
   function mincha(day) {
-    const row = state.weekday.find(r =>
-      r.dayNames?.includes(day) && r.source?.startsWith('Early Mincha fixed at'));
+    // Grouped weekday rows replace their individual source with the
+    // "matching times" grouping label. Find the actual Mincha section.
+    const start = state.weekday.findIndex(r => r.section && r.label === 'מנחה');
+    const end = state.weekday.findIndex((r, i) => i > start && r.section && r.label === 'מעריב');
+    const row = state.weekday.slice(start + 1, end).find(r => r.dayNames?.includes(day));
     assert.ok(row, 'Missing ' + day + ' Mincha');
     return row.time.split(' · ');
   }

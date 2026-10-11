@@ -44,6 +44,7 @@
 .announcement-card-switches label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
 .announcement-card-switches input{margin:0}
 .announcement-card-switches label:has(input:disabled){opacity:.55;cursor:not-allowed}
+.announcement-sponsor-note{font-size:11px;line-height:1.35;color:#59677a;margin:-3px 0 11px}
 .announcement-card-tools{display:flex;gap:4px}
 .announcement-card-tools button{padding:4px 7px}
 .announcement-drag-handle{cursor:grab;touch-action:none;user-select:none;display:flex;align-items:center;gap:5px}

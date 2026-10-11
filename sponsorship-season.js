@@ -141,13 +141,19 @@
       }
       for(const cell of row.children) {
         const c=box(cell),font=getComputedStyle(cell);
-        ctx.font=font.fontStyle+' '+font.fontWeight+' '+font.fontSize+' '+font.fontFamily;
+        let size=parseFloat(font.fontSize);
+        const applyFont=()=>{ctx.font=font.fontStyle+' '+font.fontWeight+' '+size+'px '+font.fontFamily;};
+        applyFont();
         ctx.fillStyle=font.color;ctx.textBaseline='middle';ctx.textAlign='left';
         const text=cell.textContent.trim();
         ctx.direction=/^[\u0590-\u05ff]/.test(text)?'rtl':'ltr';
-        const lines=wrapCanvasText(ctx,text,c.width);
-        const lineHeight=parseFloat(font.lineHeight);
-        if(lines.length*lineHeight>c.height+1)throw new Error('Dedication does not fit the export. Shorten it before exporting.');
+        let lines=wrapCanvasText(ctx,text,c.width),lineHeight=size*1.2;
+        // Canvas and DOM font metrics vary slightly between browser engines.
+        while(lines.length*lineHeight>c.height+1 && size>10.5) {
+          size=Math.max(10.5,size-.25);applyFont();
+          lines=wrapCanvasText(ctx,text,c.width);lineHeight=size*1.2;
+        }
+        if(lines.length*lineHeight>c.height+1)throw new Error('Text does not fit the export for '+row.firstElementChild.textContent+'. Shorten it before exporting.');
         lines.forEach((line,index)=>ctx.fillText(line,c.x,c.y+(c.height-lines.length*lineHeight)/2+lineHeight*(index+.5)));
       }
     }

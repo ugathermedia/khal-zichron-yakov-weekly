@@ -166,4 +166,5 @@
   bg.addEventListener('error',()=>setStatus('Background artwork missing. Upload your supplied JPG under “Stationery background.”',true));
   window.addEventListener('resize',resizePreview);
   window.activateSponsorSeason=()=>{resizePreview();if(!dataReady&&!busy)refresh();};
+  if (document.querySelector('[data-view-tab="sponsorships"]')?.classList.contains('active')) window.activateSponsorSeason();
 })();

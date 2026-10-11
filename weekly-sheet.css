@@ -39,7 +39,11 @@
 .sheet-field input,.sheet-field textarea{width:100%;border:1px solid #cfd4dd;border-radius:7px;padding:9px;font:inherit;color:var(--ink);background:#fff}
 .sheet-field textarea{min-height:90px;resize:vertical}
 .announcement-card{padding:14px;border:1px solid #d9dde5;border-radius:8px;margin:12px 0;background:#fafaf9}
-.announcement-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;font-size:12px}
+.announcement-card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;flex-wrap:wrap}
+.announcement-card-switches{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.announcement-card-switches label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.announcement-card-switches input{margin:0}
+.announcement-card-switches label:has(input:disabled){opacity:.55;cursor:not-allowed}
 .announcement-card-tools{display:flex;gap:4px}
 .announcement-card-tools button{padding:4px 7px}
 .announcement-drag-handle{cursor:grab;touch-action:none;user-select:none;display:flex;align-items:center;gap:5px}

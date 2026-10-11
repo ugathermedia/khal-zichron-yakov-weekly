@@ -22,7 +22,7 @@ const makeRows = (lateLabel = 'מנחה ב׳', earlyShabbosMincha = false) => [
   { label: 'שחרית', time: '8:30' },
   ...(earlyShabbosMincha ? [{ label: 'מנחה א׳', time: '2:15' }] : []),
   { label: 'שיעור', time: '5:00' },
-  { label: lateLabel, time: '5:35' },
+  { label: lateLabel, time: earlyShabbosMincha ? '5:35' : '5:30' },
   { label: 'שקיעה', time: '6:14' }
 ];
 

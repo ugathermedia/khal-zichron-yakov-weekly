@@ -83,7 +83,7 @@ assert.equal(corrected.mincha.time, '5:40');
 assert.equal(corrected.shiur.time, '5:10');
 assert.equal(corrected.likras.time, '5:25');
 assert.equal(screenshot.state.shabbos.find(r => r.label === 'מנחה א׳' && r.time === '2:15').time, '2:15');
-assert.equal(screenshot.state.shabbos[0].time, '6:00', 'Friday Mincha unchanged');
+assert.equal(screenshot.state.shabbos.find(r => r.label === 'מנחה / קבלת שבת').time, '6:00', 'Friday Mincha unchanged');
 
 // Same detection controls Shabbos Shuva drashos and shiur suppression.
 const shuva = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true, special: 'shabbos-shuva' });

@@ -141,7 +141,8 @@ async function main() {
   assert.equal(erroneous.announcements[0].recurrenceId, undefined);
 
   // Normalization of a previously saved booking must never carry a repeat id.
-  const restore = vm.runInNewContext(restoreSource + '\nthis.validDraft = validDraft; this;', {});
+  const restore = {};
+  vm.runInNewContext(restoreSource + '\nthis.validDraft = validDraft;', restore);
   const recovered = restore.validDraft({ announcements: [
     { title: 'SHALOSH SEUDOS', bookingWeek: '2026-10-17',
       repeatWeekly: true, recurrenceId: 'bad-sponsor-recurring' },

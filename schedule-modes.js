@@ -158,8 +158,24 @@
     return clockFromLocalMinutes(Math.floor((exactMinutes - getLateMinchaOffset()) / 5) * 5);
   }
 
+  // The live board may call the later Shabbos Mincha simply "מנחה".
+  // Locate the last Shabbos-afternoon Mincha before Shkiah, after Shacharis,
+  // never Friday's Mincha or the earlier (e.g. 2:15) Shabbos Mincha.
+  function lateShabbosMinchaIndex() {
+    const rows = state.shabbos;
+    const morning = rows.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
+    if (morning < 0) {
+      // Without a reliable day boundary, only match an explicitly named B.
+      return lastIndex(rows, r => !r.section && r.label === 'מנחה ב׳');
+    }
+    const sunset = rows.findIndex((r, i) => i > morning && !r.section && r.label === 'שקיעה');
+    const before = sunset < 0 ? rows.length : sunset;
+    return lastIndex(rows, (r, i) => i > morning && !r.section &&
+      /^מנחה(?:\s|$)/.test(r.label || '') && !/קבלת שבת/.test(r.label || ''), before);
+  }
+
   function shabbosShuvaDefaultTimes() {
-    const lateMinchaIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
+    const lateMinchaIndex = lateShabbosMinchaIndex();
     const minchaTime = lateMinchaIndex >= 0 ? state.shabbos[lateMinchaIndex].time : '';
     const minchaMinutes = clockMinutes(minchaTime);
     if (minchaMinutes == null) return { men:'', ladies:'', children:'' };
@@ -259,7 +275,7 @@
       });
     }
 
-    const minchaBIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
+    const minchaBIndex = lateShabbosMinchaIndex();
     if (seasonHasShaloshSeudos(season) && minchaBIndex >= 0) {
       const minchaTime = seasonalMinchaTime();
       if (minchaTime) {
@@ -301,7 +317,7 @@
     if (special === 'shabbos-shuva') {
       const times = getSpecialTimes();
       const effective = effectiveShabbosShuvaTimes(times);
-      const lateMinchaIndex = lastIndex(state.shabbos, r => !r.section && r.label === 'מנחה ב׳');
+      const lateMinchaIndex = lateShabbosMinchaIndex();
       const specialRows = SPECIAL_ROWS.map(item => ({
         label: item.label,
         time: effective[item.key],

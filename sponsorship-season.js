@@ -106,23 +106,64 @@
     sheet.style.transform='scale('+ratio+')';
     preview.style.height=(1056*ratio)+'px';
   }
+  // Draw the verified layout directly to canvas. This avoids SVG foreignObject
+  // restrictions in Firefox/Safari while retaining the exact supplied artwork.
+  function wrapCanvasText(context,text,width) {
+    const lines=[];
+    let line='';
+    for(const word of text.split(/\s+/)) {
+      const candidate=line ? line+' '+word : word;
+      if(context.measureText(candidate).width<=width) {line=candidate;continue;}
+      if(line) {lines.push(line);line='';}
+      for(const char of word) {
+        if(line && context.measureText(line+char).width>width) {lines.push(line);line='';}
+        line+=char;
+      }
+    }
+    if(line) lines.push(line);
+    return lines;
+  }
+  function captureCanvas() {
+    const canvas=document.createElement('canvas');
+    canvas.width=2550;canvas.height=3300;
+    const ctx=canvas.getContext('2d');
+    if(!ctx)throw new Error('This browser cannot create the export canvas.');
+    ctx.scale(2550/816,3300/1056);
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,816,1056);
+    ctx.drawImage(bg,0,0,816,1056);
+    const bounds=sheet.getBoundingClientRect(),scale=816/bounds.width;
+    const box=el=>{const r=el.getBoundingClientRect();return {x:(r.left-bounds.left)*scale,y:(r.top-bounds.top)*scale,width:r.width*scale,height:r.height*scale};};
+    for(const row of rowsRoot.children) {
+      const r=box(row),style=getComputedStyle(row);
+      if(parseFloat(style.borderBottomWidth)>0) {
+        ctx.strokeStyle=style.borderBottomColor;ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(r.x,r.y+r.height-.5);ctx.lineTo(r.x+r.width,r.y+r.height-.5);ctx.stroke();
+      }
+      for(const cell of row.children) {
+        const c=box(cell),font=getComputedStyle(cell);
+        ctx.font=font.fontStyle+' '+font.fontWeight+' '+font.fontSize+' '+font.fontFamily;
+        ctx.fillStyle=font.color;ctx.textBaseline='middle';ctx.textAlign='left';
+        const text=cell.textContent.trim();
+        ctx.direction=/^[\u0590-\u05ff]/.test(text)?'rtl':'ltr';
+        const lines=wrapCanvasText(ctx,text,c.width);
+        const lineHeight=parseFloat(font.lineHeight);
+        if(lines.length*lineHeight>c.height+1)throw new Error('Dedication does not fit the export. Shorten it before exporting.');
+        lines.forEach((line,index)=>ctx.fillText(line,c.x,c.y+(c.height-lines.length*lineHeight)/2+lineHeight*(index+.5)));
+      }
+    }
+    return canvas;
+  }
   async function exportJPEG(){
     if(busy)return;
     if(!dataReady)return setStatus('Refresh live sponsorships before exporting.',true);
     setBusy(true);
-    let host,canvas;
+    let canvas;
     try{
       if(document.fonts) await document.fonts.ready;
       await bg.decode();
       if(!shrinkText()) throw new Error('One or more rows overflow the page.');
-      if(!window.htmlToImage?.toCanvas || !window.WeeklyJpegExport?.compressToLimit) throw new Error('JPEG export libraries unavailable.');
-      const clone=sheet.cloneNode(true);
-      clone.removeAttribute('id');clone.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
-      Object.assign(clone.style,{transform:'none',boxShadow:'none',width:'816px',height:'1056px'});
-      host=document.createElement('div');
-      Object.assign(host.style,{position:'fixed',left:'-100000px',top:'0',width:'816px',height:'1056px',pointerEvents:'none'});
-      host.appendChild(clone);document.body.appendChild(host);
-      canvas=await window.htmlToImage.toCanvas(clone,{width:816,height:1056,pixelRatio:2550/816,backgroundColor:'#fff',style:{transform:'none',boxShadow:'none'}});
+      if(!window.WeeklyJpegExport?.compressToLimit) throw new Error('JPEG export library unavailable.');
+      canvas=captureCanvas();
       const result=await window.WeeklyJpegExport.compressToLimit(canvas);
       const url=URL.createObjectURL(result.blob);
       const a=document.createElement('a');
@@ -130,7 +171,7 @@
       setTimeout(()=>URL.revokeObjectURL(url),60000);
       setStatus('Exported full season JPEG · '+result.width+' × '+result.height+' · '+Math.round(result.size/1000)+' KB (under 1 MB).');
     }catch(e){setStatus('Could not export JPEG: '+e.message,true);}
-    finally{host?.remove();if(canvas){canvas.width=0;canvas.height=0;}setBusy(false);}
+    finally{if(canvas){canvas.width=0;canvas.height=0;}setBusy(false);}
   }
   async function printSheet(){
     if(busy)return;

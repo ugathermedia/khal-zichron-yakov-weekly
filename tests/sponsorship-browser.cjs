@@ -52,7 +52,8 @@ async function main() {
       assert.ok(content.includes('Anonymous') && !content.includes('PRIVATE'));
       assert.equal(await page.locator('.season-cell.overflow').count(),0);
       await page.locator('#sponsorSeasonSheet').screenshot({path:path.join(output,name+'-sheet.png')});
-      const downloadPromise = page.waitForEvent('download');
+      console.log('Exporting in '+name);
+      const downloadPromise = page.waitForEvent('download').catch(async e=>{console.error(name+': '+await page.locator('#sponsorSeasonStatus').innerText());throw e;});
       await page.locator('#sponsorSeasonJpeg').click();
       const download = await downloadPromise;
       const jpeg = path.join(output,name+'-sheet.jpg');
@@ -97,6 +98,24 @@ async function main() {
       await page.locator('[data-view-tab="holiday"]').click();
       assert.equal(await page.locator('[data-app-view="holiday"]').isVisible(),true);
       assert.equal(await page.locator('#sponsorshipSeasonView').isVisible(),false);
+      if(name==='chromium') {
+        // Serve this branch under the deployed origin inside this test browser
+        // only. API calls remain real cross-origin reads; nothing is deployed.
+        const live=await browser.newPage();
+        await live.route('https://ugathermedia.github.io/khal-zichron-yakov-weekly/**',async route=>{
+          const pathname=new URL(route.request().url()).pathname.replace('/khal-zichron-yakov-weekly/','');
+          const file=path.join(root,pathname||'index.html');
+          if(fs.existsSync(file)) return route.fulfill({contentType:types[path.extname(file)]||'application/octet-stream',body:fs.readFileSync(file)});
+          return route.fulfill({status:404,body:''});
+        });
+        await live.goto('https://ugathermedia.github.io/khal-zichron-yakov-weekly/');
+        await live.locator('[data-view-tab="sponsorships"]').click();
+        await live.waitForFunction(()=>document.getElementById('sponsorSeasonStatus').textContent.startsWith('Live sponsorship data loaded'),{},{timeout:120000});
+        assert.equal(await live.locator('.season-row').count(),28);
+        assert.equal(await live.locator('.season-cell.overflow').count(),0);
+        await live.locator('#sponsorSeasonSheet').screenshot({path:path.join(output,'live-sheet.png')});
+        await live.close();
+      }
       results.push({engine:name,jpegBytes:fs.statSync(jpeg).size,passed:true});
     } finally { await browser.close(); }
   }

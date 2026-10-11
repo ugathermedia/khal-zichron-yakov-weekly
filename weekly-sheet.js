@@ -41,8 +41,10 @@
       announcements: value.announcements.map(a => {
         const booked = typeof a.bookingWeek === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.bookingWeek);
         const repeatWeekly = !booked && a.repeatWeekly === true;
-        const recurrenceId = typeof a.recurrenceId === 'string' && a.recurrenceId.length <= 120
-          ? a.recurrenceId : (repeatWeekly ? newRecurrenceId() : '');
+        // A confirmed sponsorship is always week-specific, even when imported
+        // from an older backup that mistakenly marked it as recurring.
+        const recurrenceId = !booked && typeof a.recurrenceId === 'string' && a.recurrenceId.length <= 120
+          ? a.recurrenceId : (!booked && repeatWeekly ? newRecurrenceId() : '');
         return {
           title: String(a.title || ''), body: String(a.body || ''),
           subtitle: String(a.subtitle || ''), names: String(a.names || ''), visible: a.visible !== false,
@@ -89,6 +91,7 @@
             <button type="button" data-action="delete" aria-label="Delete announcement ${i + 1}">Delete</button>
           </div>
         </div>
+        ${a.bookingWeek ? '<div class="announcement-sponsor-note">Sponsorship synced for this Shabbos · does not repeat weekly</div>' : ''}
         <label class="sheet-field">Title<input data-property="title" dir="auto" value="${esc(a.title)}"></label>
         <label class="sheet-field">Time / location / subtitle (optional)<input data-property="subtitle" dir="auto" value="${esc(a.subtitle)}"></label>
         <label class="sheet-field">Announcement<textarea data-property="body" dir="auto">${esc(a.body)}</textarea></label>
@@ -156,15 +159,19 @@
         return;
       }
       if (booking.week !== saturday || typeof booking.sponsorName !== 'string' || typeof booking.dedication !== 'string') throw new Error('Invalid sponsorship response');
-      if (index < 0) index = draft.announcements.findIndex(a => !a.bookingWeek && /^(?:shalosh|sholosh)\s+seudos$/i.test(a.title.trim()));
+      // Only a record tied to this exact Shabbos is the synced sponsorship.
+      // Never identify one by its title: an ordinary recurring announcement
+      // may also legitimately be called "Shalosh Seudos".
       const previous = index >= 0 ? draft.announcements[index] : null;
       const values = { title: 'SHALOSH SEUDOS', body: booking.dedication, names: booking.sponsorName };
-      const announcement = previous ? { ...previous } : { title: '', subtitle: '', body: '', names: '', visible: true };
+      const announcement = previous ? { ...previous } : { title: '', subtitle: '', body: '', names: '', visible: true, repeatWeekly: false };
       for (const field of Object.keys(values)) {
         if (!previous?.bookingWeek || announcement[field] === previous.bookingValues?.[field]) announcement[field] = values[field];
       }
       if (/sponsorship available/i.test(announcement.subtitle)) announcement.subtitle = '';
       announcement.bookingWeek = saturday;
+      announcement.repeatWeekly = false;
+      delete announcement.recurrenceId;
       announcement.bookingTopDefault = true;
       announcement.bookingValues = values;
       if (index >= 0) draft.announcements[index] = announcement;
@@ -442,9 +449,15 @@
       const restored = validDraft(parsed);
       syncWeek();
       draft.title = restored.title;
-      draft.announcements.push(...restored.announcements);
+      const saturday = localISO(addDays(state.friday, 1));
+      // A backup from a different week can restore ordinary announcements,
+      // but must never publish that other week's sponsor in this week's sheet.
+      const eligible = restored.announcements.filter(a => !a.bookingWeek || a.bookingWeek === saturday);
+      const skipped = restored.announcements.length - eligible.length;
+      draft.announcements.push(...eligible);
       drawEditor(); save();
-      status.textContent = 'Backup imported into the selected week. Existing announcements were kept.';
+      status.textContent = 'Backup imported into the selected week. Existing announcements were kept.' +
+        (skipped ? ' Skipped ' + skipped + ' sponsorship' + (skipped === 1 ? '' : 's') + ' from other weeks.' : '');
     } catch (error) { status.textContent = `Could not restore: ${error.message}`; }
     e.target.value = '';
   };

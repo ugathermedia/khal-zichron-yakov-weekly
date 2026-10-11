@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'schedule-modes.js'), 
 const footer = /\n  injectUI\(\);\s*const baseRefresh = window\.refresh;[\s\S]*?\n\}\)\(\);\s*$/;
 assert.match(source, footer, 'schedule mode startup exists');
 const testable = source.replace(footer,
-  '\n  window.__testSeason = { getLateMinchaOffset, seasonalMinchaTime, applyScheduleModes };\n})();\n');
+  '\n  window.__testSeason = { getLateMinchaOffset, seasonalMinchaTime, applyScheduleModes, lateShabbosMinchaIndex };\n})();\n');
 
 const friday = new Date('2026-10-16T12:00:00Z');
 const sunset = '2026-10-17T18:14:48-04:00';
@@ -17,22 +17,24 @@ const clock = minutes => {
   const h = Math.floor(minutes / 60) % 24, m = minutes % 60;
   return (h % 12 || 12) + ':' + String(m).padStart(2, '0');
 };
-const makeRows = () => [
+const makeRows = (lateLabel = 'מנחה ב׳', earlyShabbosMincha = false) => [
   { label: 'מנחה א׳', time: '6:00' }, // Friday Mincha/Kabbalas Shabbos
   { label: 'שחרית', time: '8:30' },
-  { label: 'שיעור', time: '4:30' },
-  { label: 'מנחה ב׳', time: '5:30' },
+  ...(earlyShabbosMincha ? [{ label: 'מנחה א׳', time: '2:15' }] : []),
+  { label: 'שיעור', time: '5:00' },
+  { label: lateLabel, time: '5:35' },
   { label: 'שקיעה', time: '6:14' }
 ];
 
-function fixture({ setting = null, season = 'winter', store = null } = {}) {
+function fixture({ setting = null, season = 'winter', store = null, lateLabel = 'מנחה ב׳', earlyShabbosMincha = false, special = 'normal' } = {}) {
   const saved = store || new Map();
   saved.set('kzy-weekly:season-mode', season);
+  saved.set('kzy-weekly:special-mode:2026-10-16', special);
   if (setting !== null) saved.set('kzy-weekly:shabbos-late-mincha-minutes', String(setting));
   const state = {
     friday: new Date(friday),
     engine: { shabbos: { SeaLevelSunset: sunset } },
-    shabbos: makeRows(),
+    shabbos: makeRows(lateLabel, earlyShabbosMincha),
     weekday: [],
     diagnostics: []
   };
@@ -53,7 +55,8 @@ function fixture({ setting = null, season = 'winter', store = null } = {}) {
 
 function afterRules(f) {
   f.mode.applyScheduleModes();
-  const mincha = f.state.shabbos.find(r => r.label === 'מנחה ב׳');
+  const minchaIndex = f.mode.lateShabbosMinchaIndex();
+  const mincha = minchaIndex >= 0 ? f.state.shabbos[minchaIndex] : null;
   const shiur = f.state.shabbos.find(r => r.label === 'שיעור');
   const likras = f.state.shabbos.find(r => r.label === 'לקראת שבת');
   return { mincha, shiur, likras };
@@ -68,6 +71,27 @@ assert.equal(next.mincha.time, '5:40');
 assert.equal(next.shiur.time, '5:10', 'shiur remains 30 minutes before late Mincha');
 assert.equal(next.likras.time, '5:25', 'independent Friday Likras Shabbos 35-min rule unchanged');
 assert.match(next.mincha.source, /at least 30 min/);
+
+// Screenshot fixture: Shabbos has both an earlier 2:15 Mincha and a later
+// 5:35 Mincha labelled just "מנחה". Previously the seasonal 30-minute
+// calculation never ran; it must now update Mincha and afternoon shiur.
+const screenshot = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true });
+assert.equal(screenshot.mode.lateShabbosMinchaIndex(), 4);
+const corrected = afterRules(screenshot);
+assert.equal(corrected.mincha.label, 'מנחה');
+assert.equal(corrected.mincha.time, '5:40');
+assert.equal(corrected.shiur.time, '5:10');
+assert.equal(corrected.likras.time, '5:25');
+assert.equal(screenshot.state.shabbos.find(r => r.label === 'מנחה א׳' && r.time === '2:15').time, '2:15');
+assert.equal(screenshot.state.shabbos[0].time, '6:00', 'Friday Mincha unchanged');
+
+// Same detection controls Shabbos Shuva drashos and shiur suppression.
+const shuva = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true, special: 'shabbos-shuva' });
+const shuvaRows = afterRules(shuva);
+assert.equal(shuvaRows.mincha.time, '5:40');
+assert.equal(shuvaRows.shiur.hiddenByMode, true);
+assert.equal(shuva.state.shabbos.find(r => r.label === 'דרשת שבת שובה – אנשים').time, '4:50');
+assert.equal(shuva.state.shabbos.find(r => r.label === 'דרשת שבת שובה – נשים').time, '3:40');
 
 // User can select 35 again; stored setting persists on another Shabbos.
 const oldStyle = fixture({ setting: 35 });
@@ -105,4 +129,4 @@ assert.match(source, /localStorage\.setItem\(SHABBOS_LATE_MINCHA_OFFSET_KEY, Str
 assert.match(source, /id="shabbosLateMinchaOffset"/);
 assert.match(source, /getLateMinchaOffset\(\)\)\;/);
 
-console.log('Shabbos late Mincha: 30-min default, configurable offset, :05 floor, shiur, Likras, seasons and cross-week persistence passed.');
+console.log('Shabbos late Mincha: screenshot label, 30-min default, :05 floor, shiur, Shuva, seasons and cross-week persistence passed.');

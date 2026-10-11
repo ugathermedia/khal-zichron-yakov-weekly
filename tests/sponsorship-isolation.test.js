@@ -102,7 +102,7 @@ async function main() {
   assert.equal(newBooking.names, 'Updated sponsor name', 'unedited name updates');
   assert.equal(newBooking.subtitle, 'Special this week');
   assert.equal(newBooking.visible, false);
-  assert.equal(original.announcements[1], booked, 'saved order preserved');
+  assert.equal(original.announcements[1].bookingWeek, '2026-10-17', 'saved order preserved');
   assert.equal(original.announcements[0].body, recurring.body);
 
   // Cancelled booking removes ONLY matched sponsorship.

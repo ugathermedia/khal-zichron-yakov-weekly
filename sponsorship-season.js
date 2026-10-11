@@ -9,16 +9,16 @@
   const preview = $('sponsorSeasonPreview');
   const bg = $('sponsorSeasonBackground');
   const buttons = ['sponsorSeasonRefresh','sponsorSeasonJpeg','sponsorSeasonPrint'].map($);
-  let dataReady = false, busy = false, currentRows = [];
+  let dataReady = false, busy = false;
   const dateUTC = s => new Date(s + 'T12:00:00Z');
   const iso = d => d.toISOString().slice(0,10);
   const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const parshaNames = {Bereshit:'Bereishis',Shemot:'Shemos',Vayechi:'Vayechi',Toldot:'Toldos',Yitro:'Yisro',Vayigash:'Vayigash',Beshalach:'Beshalach',Terumah:'Terumah',Tetzaveh:'Tetzaveh',Vayakhel:'Vayakhel',Pekudei:'Pekudei',Shmini:'Shmini',Vayikra:'Vayikra',Miketz:'Miketz',Vayeshev:'Vayeshev',Tazria:'Tazria',Metzora:'Metzora',Ki:'Ki'};
+  const parshaNames = {Bereshit:'Bereishis',Shemot:'Shemos',Vayechi:'Vayechi',Toldot:'Toldos',Yitro:'Yisro',Vayigash:'Vayigash',Beshalach:'Beshalach',Terumah:'Terumah',Tetzaveh:'Tetzaveh',Vayakhel:'Vayakhel',Pekudei:'Pekudei',Shmini:'Shmini',Vayikra:'Vayikra',Miketz:'Miketz',Vayeshev:'Vayeshev',Tazria:'Tazria',Metzora:'Metzora',Ki:'Ki',Tisa:'Sisa'};
   const monthNames = {'Cheshvan':'Cheshvan','Kislev':'Kislev','Tevet':'Teves','Sh’vat':'Shevat','Sh\'vat':'Shevat','Adar I':'Adar Alef','Adar II':'Adar Beis','Nisan':'Nisan'};
   function parsha(s) {return s.replace(/^Parashat /,'').replace(/\b[A-Za-z]+/g,w=>parshaNames[w]||w);}
   function specials(day, events) {
     const list = events.filter(e => e.category==='mevarchim').map(e => 'Mevorchim ' + (monthNames[e.title.replace(/^Mevarchim Chodesh /,'')] || e.title.replace(/^Mevarchim Chodesh /,'')));
-    if (events.some(e=>e.category==='roshchodesh')) list.push('Rosh Chodesh');
+    events.filter(e=>e.category==='roshchodesh').forEach(e=> { const month=e.title.replace(/^Rosh Chodesh /,''); list.push('Rosh Chodesh '+(monthNames[month]||month)); });
     const special = {
       '2026-12-05':'Chanukah', '2026-12-12':'Chanukah', '2027-01-23':'Tu B’Shevat · Shabbos Shirah',
       '2027-03-06':'Shekalim', '2027-03-20':'Zachor', '2027-03-27':'Parah',
@@ -43,14 +43,22 @@
     return arr;
   }
   async function getSponsor(row) {
-    const r=await fetch(API+'/api/sponsorship?week='+encodeURIComponent(row.day),{cache:'no-store',credentials:'omit'});
-    if(!r.ok) throw new Error('Sponsor lookup failed for '+row.day+' ('+r.status+')');
-    const x=await r.json();
-    if(!Object.prototype.hasOwnProperty.call(x,'sponsorship')) throw new Error('Invalid sponsor response for '+row.day);
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(),15000);
+    let r;
+    try {
+      r=await fetch(API+'/api/sponsorship?week='+encodeURIComponent(row.day),{cache:'no-store',credentials:'omit',signal:controller.signal});
+      const x=await r.json();
+      if(!r.ok) throw new Error('Sponsor lookup failed for '+row.day+' ('+r.status+')');
+      return publicSponsor(x,row.day);
+    } finally { clearTimeout(timeout); }
+  }
+  function publicSponsor(x,day) {
+    if(!Object.prototype.hasOwnProperty.call(x,'sponsorship')) throw new Error('Invalid sponsor response for '+day);
     const s=x.sponsorship;
-    if(!s) return null;
-    if(s.week!==row.day || typeof s.sponsorName!=='string'||typeof s.dedication!=='string') throw new Error('Invalid sponsor record for '+row.day);
-    return {name:s.sponsorName.trim()||'Anonymous',dedication:s.dedication.trim()};
+    if(s === null) return null;
+    if(s.week!==day || typeof s.sponsorName!=='string'||typeof s.dedication!=='string') throw new Error('Invalid sponsor record for '+day);
+    return {name:s.anonymous === true ? 'Anonymous' : (s.sponsorName.trim()||'Anonymous'),dedication:s.dedication.trim()};
   }
   function shrinkText() {
     rowsRoot.querySelectorAll('.season-cell').forEach(cell=>{
@@ -58,11 +66,11 @@
       const span=cell.firstElementChild;
       if(!span) return;
       let size=parseFloat(getComputedStyle(cell).fontSize);
-      while(span.scrollWidth>cell.clientWidth && size>10.2) {size-=.35;cell.style.fontSize=size+'px';}
-      cell.classList.toggle('overflow',span.scrollWidth>cell.clientWidth+1);
+      while((span.scrollWidth>cell.clientWidth+1 || span.getBoundingClientRect().height > cell.getBoundingClientRect().height+1) && size>10.5) {size=Math.max(10.5,size-.25);cell.style.fontSize=size+'px';}
+      cell.classList.toggle('overflow',span.scrollWidth>cell.clientWidth+1 || span.getBoundingClientRect().height>cell.getBoundingClientRect().height+1);
     });
     const problems=rowsRoot.querySelectorAll('.overflow').length;
-    if(problems) setStatus(problems+' row(s) contain text too long for one readable line. Shorten the dedication before exporting.',true);
+    if(problems) setStatus(problems+' row(s) contain text too long to fit legibly in its row. Shorten the dedication on the sponsorship form before exporting.',true);
     return !problems;
   }
   function render(rows) {
@@ -75,7 +83,7 @@
   }
   async function refresh() {
     if(busy) return;
-    setBusy(true);dataReady=false;setStatus('Loading season calendar and 28 sponsorships…');
+    setBusy(true);dataReady=false;rowsRoot.replaceChildren();setStatus('Loading season calendar and 28 sponsorships…');
     try {
       const rows=await calendarRows();
       // Limit requests to small batches, so a temporary rate limit does not overwhelm the form.
@@ -84,7 +92,9 @@
         const found=await Promise.all(items.map(getSponsor));
         found.forEach((s,k)=>{items[k].sponsor=s;});
       }
-      currentRows=rows;render(rows);dataReady=true;
+      if(document.fonts) await document.fonts.ready;
+      await bg.decode();
+      render(rows);dataReady=true;
       if(!rowsRoot.querySelector('.overflow')) setStatus('Live sponsorship data loaded · '+rows.filter(r=>r.sponsor).length+' reserved · '+rows.filter(r=>!r.sponsor).length+' available.');
     }catch(e) {
       dataReady=false;setStatus('Could not load the complete season: '+e.message+'. Export is blocked until all 28 weeks load.',true);
@@ -96,38 +106,6 @@
     sheet.style.transform='scale('+ratio+')';
     preview.style.height=(1056*ratio)+'px';
   }
-  function store(mode,action){
-    return new Promise((resolve,reject)=>{
-      const req=indexedDB.open('kzy-sponsor-season-background',1);
-      req.onupgradeneeded=()=>req.result.createObjectStore('assets');
-      req.onerror=()=>reject(req.error);
-      req.onsuccess=()=>{
-        const db=req.result,tx=db.transaction('assets',mode),q=action(tx.objectStore('assets'));
-        tx.oncomplete=()=>{db.close();resolve(q.result);};
-        tx.onerror=()=>{db.close();reject(tx.error);};
-      };
-    });
-  }
-  let objectURL=null;
-  function showBackground(file){
-    if(objectURL)URL.revokeObjectURL(objectURL);
-    objectURL=file?URL.createObjectURL(file):null;
-    bg.src=objectURL||'assets/shalosh-seudos-sponsorship-background.jpg';
-  }
-  $('sponsorSeasonBackgroundUpload').addEventListener('change',async e=>{
-    const file=e.target.files?.[0];
-    if(!file)return;
-    try{
-      if(!/^image\/(jpeg|png)$/.test(file.type))throw new Error('Choose a JPEG or PNG.');
-      const im=new Image(),url=URL.createObjectURL(file);
-      try{im.src=url;await im.decode();if(Math.abs(im.naturalWidth/im.naturalHeight-8.5/11)>.02)throw new Error('Artwork must be US Letter portrait.');}
-      finally{URL.revokeObjectURL(url);}
-      await store('readwrite',s=>s.put(file,'background'));showBackground(file);
-      setStatus('Sponsorship stationery saved to this browser. Refresh sponsorships to update bookings.');
-    }catch(err){setStatus(err.message,true);}
-    e.target.value='';
-  });
-  store('readonly',s=>s.get('background')).then(blob=>{if(blob)showBackground(blob);}).catch(()=>{});
   async function exportJPEG(){
     if(busy)return;
     if(!dataReady)return setStatus('Refresh live sponsorships before exporting.',true);
@@ -154,17 +132,26 @@
     }catch(e){setStatus('Could not export JPEG: '+e.message,true);}
     finally{host?.remove();if(canvas){canvas.width=0;canvas.height=0;}setBusy(false);}
   }
-  function printSheet(){
+  async function printSheet(){
+    if(busy)return;
+    if(document.fonts) await document.fonts.ready;
     if(!dataReady)return setStatus('Refresh sponsorships before printing.',true);
-    if(!bg.complete||!bg.naturalWidth)return setStatus('Upload the supplied stationery background first.',true);
+    if(!bg.complete||!bg.naturalWidth)return setStatus('The supplied background could not load. Reload the page and try again.',true);
     if(!shrinkText())return;
     window.print();
   }
   $('sponsorSeasonRefresh').onclick=refresh;
   $('sponsorSeasonJpeg').onclick=exportJPEG;
   $('sponsorSeasonPrint').onclick=printSheet;
-  bg.addEventListener('error',()=>setStatus('Background artwork missing. Upload your supplied JPG under “Stationery background.”',true));
+  bg.addEventListener('error',()=>setStatus('The supplied background could not load. Reload the page and try again.',true));
   window.addEventListener('resize',resizePreview);
+  window.addEventListener('beforeprint',()=>{
+    if(document.body.dataset.activeView==='sponsorships') {
+      const valid=dataReady && !busy && bg.complete && bg.naturalWidth && shrinkText();
+      document.body.classList.toggle('sponsor-print-invalid',!valid);
+    }
+  });
+  window.addEventListener('afterprint',()=>document.body.classList.remove('sponsor-print-invalid'));
   window.activateSponsorSeason=()=>{resizePreview();if(!dataReady&&!busy)refresh();};
   if (document.querySelector('[data-view-tab="sponsorships"]')?.classList.contains('active')) window.activateSponsorSeason();
 })();

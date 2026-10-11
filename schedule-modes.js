@@ -1,5 +1,12 @@
 (() => {
   const SEASON_KEY = 'kzy-weekly:season-mode';
+  // Global, browser-persistent: the same late Shabbos Mincha rule applies
+  // when moving between weeks. Exact Shkiah is still used for calculations.
+  const SHABBOS_LATE_MINCHA_OFFSET_KEY = 'kzy-weekly:shabbos-late-mincha-minutes';
+  const getLateMinchaOffset = () => {
+    const saved = Number(localStorage.getItem(SHABBOS_LATE_MINCHA_OFFSET_KEY));
+    return Number.isInteger(saved) && saved >= 15 && saved <= 60 ? saved : 30;
+  };
   const SPECIAL_PREFIX = 'kzy-weekly:special-mode:';
   const SPECIAL_TIMES_PREFIX = 'kzy-weekly:special-times:';
 
@@ -145,9 +152,10 @@
     const get = type => Number(parts.find(p => p.type === type)?.value);
     const exactMinutes = get('hour') * 60 + get('minute') +
       get('second') / 60 + d.getUTCMilliseconds() / 60000;
-    // The :05 floor uses exact sunset, not rounded displayed Shkiah,
-    // preserving the minimum 35-minute buffer.
-    return clockFromLocalMinutes(Math.floor((exactMinutes - 35) / 5) * 5);
+    // Use the full-precision sunset, never displayed/rounded Shkiah.
+    // Round DOWN to the prior :05, maintaining at least the selected
+    // number of minutes before actual Shkiah (default: 30 minutes).
+    return clockFromLocalMinutes(Math.floor((exactMinutes - getLateMinchaOffset()) / 5) * 5);
   }
 
   function shabbosShuvaDefaultTimes() {
@@ -257,7 +265,7 @@
       if (minchaTime) {
         const mincha = state.shabbos[minchaBIndex];
         mincha.time = minchaTime;
-        mincha.source = 'Seasonal: 35–40 min before Shkia, rounded down to :05';
+        mincha.source = 'Seasonal: at least ' + getLateMinchaOffset() + ' min before exact Shkia, rounded down to prior :05';
         mincha.modeCalculated = true;
 
         // Regular weekly afternoon shiur = 30 minutes before the late Mincha.
@@ -367,6 +375,10 @@
         #scheduleModeCard .special-times{display:grid;grid-template-columns:repeat(3,minmax(110px,1fr));gap:8px;margin-top:10px}
         #scheduleModeCard .special-times label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#536070}
         #scheduleModeCard .mode-note{margin-top:8px;font-size:11px;color:#687386}
+        #scheduleModeCard .late-mincha-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#24334e}
+        #scheduleModeCard .late-mincha-control input{width:72px}
+        #scheduleModeCard .late-mincha-control[hidden]{display:none}
+        #scheduleModeCard .late-mincha-help{font-size:11px;color:#687386;flex-basis:100%}
         @media(max-width:760px){#scheduleModeCard .mode-grid{grid-template-columns:1fr}#scheduleModeCard .special-times{grid-template-columns:1fr}}
       </style>
       <div class="mode-grid">
@@ -378,6 +390,12 @@
             <button type="button" class="mode-btn" data-season="summer-no-ss">Summer season · without SS</button>
           </div>
           <div class="mode-note" id="seasonRuleNote"></div>
+          <div class="late-mincha-control" id="lateMinchaControl">
+            <label for="shabbosLateMinchaOffset">Shabbos afternoon Mincha</label>
+            <input id="shabbosLateMinchaOffset" type="number" min="15" max="60" step="1" inputmode="numeric">
+            <span>minutes before Shkiah</span>
+            <span class="late-mincha-help">Saved for all weeks in this browser. Time rounds down to the preceding :05.</span>
+          </div>
         </div>
         <div>
           <div class="mode-title">This Shabbos</div>
@@ -396,6 +414,16 @@
         localStorage.setItem(SEASON_KEY, btn.dataset.season);
         await window.refresh();
       });
+    });
+
+    card.querySelector('#shabbosLateMinchaOffset').addEventListener('change', async e => {
+      const requested = Number(e.target.value);
+      if (!e.target.value.trim() || !Number.isInteger(requested) || requested < 15 || requested > 60) {
+        e.target.value = String(getLateMinchaOffset());
+        return;
+      }
+      localStorage.setItem(SHABBOS_LATE_MINCHA_OFFSET_KEY, String(requested));
+      await window.refresh();
     });
 
     card.querySelector('#specialSchedule').addEventListener('change', async e => {
@@ -417,10 +445,14 @@
     select.value = special;
 
     const seasonNote = document.getElementById('seasonRuleNote');
+    const offset = getLateMinchaOffset();
+    const offsetInput = document.getElementById('shabbosLateMinchaOffset');
+    offsetInput.value = String(offset);
+    document.getElementById('lateMinchaControl').hidden = !seasonHasShaloshSeudos(season);
     if (season === 'winter') {
-      seasonNote.textContent = 'Shalosh Seudos in shul. Late Mincha: 35–40 min before shkiah, to the prior :05. Regular shiur: 30 min before Mincha. Pirkei Avos removed.';
+      seasonNote.textContent = 'Shalosh Seudos in shul. Late Mincha: at least ' + offset + ' minutes before exact Shkiah, rounded down to prior :05. Regular shiur: 30 min before Mincha. Pirkei Avos removed.';
     } else if (season === 'summer-ss') {
-      seasonNote.textContent = 'Shalosh Seudos in shul. Late Mincha: 35–40 min before shkiah, to the prior :05. Regular shiur: 30 min before Mincha. Pirkei Avos remains.';
+      seasonNote.textContent = 'Shalosh Seudos in shul. Late Mincha: at least ' + offset + ' minutes before exact Shkiah, rounded down to prior :05. Regular shiur: 30 min before Mincha. Pirkei Avos remains.';
     } else {
       seasonNote.textContent = 'No Shalosh Seudos in shul. Uses the normal KZY board times for late Mincha and the regular shiur. Pirkei Avos remains.';
     }

@@ -7,14 +7,14 @@
   <title>Khal Zichron Yakov Weekly</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="weekly-sheet.css?v=11">
-  <link rel="stylesheet" href="sponsorship-season.css?v=1">
+  <link rel="stylesheet" href="sponsorship-season.css?v=2">
   <script defer src="calendar.js?v=1"></script>
   <script defer src="https://unpkg.com/kosher-zmanim@0.9.0/dist/kosher-zmanim.min.js"></script>
   <script defer src="bootstrap.js"></script>
   <script defer src="zmanim-rounding.js?v=3"></script>
   <script defer src="app.js?v=7"></script>
   <script defer src="precision-fix.js"></script>
-  <script defer src="schedule-modes.js?v=floor-shkiah-plag-1"></script>
+  <script defer src="schedule-modes.js?v=late-mincha-offset-1"></script>
   <script defer src="weekday-planner.js?v=13"></script>
   <script defer src="succos-planner.js?v=5"></script>
   <script defer src="view-tabs.js?v=1"></script>
@@ -22,7 +22,7 @@
   <script defer src="jpeg-export.js?v=1"></script>
   <script defer src="announcement-recurrence.js?v=1"></script>
   <script defer src="weekly-sheet.js?v=14"></script>
-  <script defer src="sponsorship-season.js?v=1"></script>
+  <script defer src="sponsorship-season.js?v=2"></script>
 </head>
 <body>
   <header class="topbar">
@@ -176,7 +176,6 @@
         <button id="sponsorSeasonRefresh" type="button" class="primary">Refresh Sponsorships</button>
         <button id="sponsorSeasonJpeg" type="button">Export JPEG (under 1 MB)</button>
         <button id="sponsorSeasonPrint" type="button">Print / Save PDF</button>
-        <label>Stationery background <input id="sponsorSeasonBackgroundUpload" type="file" accept="image/jpeg,image/png"></label>
       </div>
       <p id="sponsorSeasonStatus" class="sponsor-season-note" role="status">Open this tab to load live sponsorships.</p>
       <div id="sponsorSeasonPreview" class="sponsor-season-viewport">

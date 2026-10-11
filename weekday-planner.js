@@ -89,13 +89,16 @@
   }
 
   function fixedFromBoard(rows) {
-    const shacharis = rows.filter(r => !r.section && /^שחרית/.test(r.label || '')).map(r => r.time).filter(Boolean);
+    // These are the shul's standing Shacharis times, not the current values
+    // on the public board. The board can contain Rosh Chodesh, Neitz, or
+    // previously saved weekly overrides; none may become the next week's
+    // regular defaults. Per-date exceptions still come from the planner.
     const minchaEarly = rows.find(r => !r.section && /מנחה מוקדמת/.test(r.label || ''))?.time || '1:45';
     const maariv = rows.filter(r => !r.section && r.label === 'מעריב').map(r => r.time).filter(Boolean);
     return {
-      shacharisA: shacharis[0] || '6:45',
-      shacharisB: shacharis[1] || '7:30',
-      extraShacharis: shacharis[2] || '8:45',
+      shacharisA: '6:45',
+      shacharisB: '7:30',
+      extraShacharis: '8:45',
       minchaEarly,
       maarivB: maariv[0] || '8:15',
       maarivC: maariv[1] || '9:45'
@@ -170,7 +173,19 @@
       changedTimes.push(result);
       return result;
     }));
-    return { times: adjusted, changedTimes, neitz: timing.neitz, earliest: timing.start };
+
+    // Two distinct early times may both be pushed to the same Neitz floor.
+    // Keep a single minyan at that clock time, not e.g. 6:50 · 6:50.
+    const unique = [];
+    const seen = new Set();
+    for (const time of adjusted) {
+      const minutes = shacharisClockMinutes(time);
+      const key = minutes == null ? String(time).trim() : String(minutes);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(time);
+    }
+    return { times: unique, changedTimes: [...new Set(changedTimes)], neitz: timing.neitz, earliest: timing.start };
   }
 
   function addSeasonalNeitzMinyan(times, timing) {

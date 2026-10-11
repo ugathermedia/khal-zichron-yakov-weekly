@@ -18,7 +18,7 @@
 .season-sponsor{text-align:left}.season-available{color:#7a8793;font-style:italic}
 .season-cell.overflow{outline:1px solid #b42626}
 @media print{
- body[data-active-view="sponsorships"] > main{display:block!important;padding:0!important;margin:0!important;width:8.5in!important;max-width:none!important}
+ body[data-active-view="sponsorships"] > main:not(#printSheetMount){display:block!important;padding:0!important;margin:0!important;width:8.5in!important;max-width:none!important}
  body[data-active-view="sponsorships"] > #printSheetMount{display:none!important}
  body[data-active-view="sponsorships"] main>*:not(.sponsor-season-view){display:none!important}
  body[data-active-view="sponsorships"] .sponsor-season-view{display:block!important;border:0!important;padding:0!important;margin:0!important}

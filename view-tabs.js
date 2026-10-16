@@ -2,7 +2,7 @@
   const KEY = 'kzy-weekly:active-view';
 
   function setView(view) {
-    const next = view === 'holiday' ? 'holiday' : 'weekly';
+    const next = ['weekly','holiday','sponsorships'].includes(view) ? view : 'weekly';
     document.querySelectorAll('[data-app-view]').forEach(el => {
       el.hidden = el.dataset.appView !== next;
     });
@@ -11,7 +11,9 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+    document.body.dataset.activeView = next;
     localStorage.setItem(KEY, next);
+    if (next === 'sponsorships' && typeof window.activateSponsorSeason === 'function') window.activateSponsorSeason();
     if (next === 'holiday' && typeof window.renderSuccosPlanner === 'function') {
       window.renderSuccosPlanner();
     }

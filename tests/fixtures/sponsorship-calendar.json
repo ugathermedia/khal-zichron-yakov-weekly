@@ -1,0 +1,201 @@
+{
+  "weeks": [
+    {
+      "week": "2026-10-10",
+      "parsha": "Parshas Bereishis",
+      "special": [
+        "Mevorchim Chodesh Cheshvan"
+      ]
+    },
+    {
+      "week": "2026-10-17",
+      "parsha": "Parshas Noach",
+      "special": [],
+      "date": "October 17, '26"
+    },
+    {
+      "week": "2026-10-24",
+      "parsha": "Parshas Lech-Lecha",
+      "special": [],
+      "date": "October 24, '26"
+    },
+    {
+      "week": "2026-10-31",
+      "parsha": "Parshas Vayera",
+      "special": [],
+      "date": "October 31, '26"
+    },
+    {
+      "week": "2026-11-07",
+      "parsha": "Parshas Chayei Sara",
+      "special": [
+        "Mevorchim Chodesh Kislev"
+      ],
+      "date": "November 7, '26"
+    },
+    {
+      "week": "2026-11-14",
+      "parsha": "Parshas Toldos",
+      "special": [],
+      "date": "November 14, '26"
+    },
+    {
+      "week": "2026-11-21",
+      "parsha": "Parshas Vayetzei",
+      "special": [],
+      "date": "November 21, '26"
+    },
+    {
+      "week": "2026-11-28",
+      "parsha": "Parshas Vayishlach",
+      "special": [],
+      "date": "November 28, '26"
+    },
+    {
+      "week": "2026-12-05",
+      "parsha": "Parshas Vayeshev",
+      "special": [
+        "Shabbos Chanukah",
+        "Mevorchim Chodesh Teves"
+      ],
+      "date": "December 5, '26"
+    },
+    {
+      "week": "2026-12-12",
+      "parsha": "Parshas Miketz",
+      "special": [
+        "Shabbos Chanukah"
+      ],
+      "date": "December 12, '26"
+    },
+    {
+      "week": "2026-12-19",
+      "parsha": "Parshas Vayigash",
+      "special": [],
+      "date": "December 19, '26"
+    },
+    {
+      "week": "2026-12-26",
+      "parsha": "Parshas Vayechi",
+      "special": [],
+      "date": "December 26, '26"
+    },
+    {
+      "week": "2027-01-02",
+      "parsha": "Parshas Shemos",
+      "special": [
+        "Mevorchim Chodesh Shevat"
+      ],
+      "date": "January 2, '27"
+    },
+    {
+      "week": "2027-01-09",
+      "parsha": "Parshas Vaera",
+      "special": [
+        "Rosh Chodesh Shevat"
+      ],
+      "date": "January 9, '27"
+    },
+    {
+      "week": "2027-01-16",
+      "parsha": "Parshas Bo",
+      "special": [],
+      "date": "January 16, '27"
+    },
+    {
+      "week": "2027-01-23",
+      "parsha": "Parshas Beshalach",
+      "special": [
+        "Tu B’Shevat",
+        "Shabbos Shirah"
+      ],
+      "date": "January 23, '27"
+    },
+    {
+      "week": "2027-01-30",
+      "parsha": "Parshas Yisro",
+      "special": [],
+      "date": "January 30, '27"
+    },
+    {
+      "week": "2027-02-06",
+      "parsha": "Parshas Mishpatim",
+      "special": [
+        "Mevorchim Chodesh Adar Alef"
+      ],
+      "date": "February 6, '27"
+    },
+    {
+      "week": "2027-02-13",
+      "parsha": "Parshas Terumah",
+      "special": [],
+      "date": "February 13, '27"
+    },
+    {
+      "week": "2027-02-20",
+      "parsha": "Parshas Tetzaveh",
+      "special": [],
+      "date": "February 20, '27"
+    },
+    {
+      "week": "2027-02-27",
+      "parsha": "Parshas Ki Sisa",
+      "special": [],
+      "date": "February 27, '27"
+    },
+    {
+      "week": "2027-03-06",
+      "parsha": "Parshas Vayakhel",
+      "special": [
+        "Shabbos Shekalim",
+        "Mevorchim Chodesh Adar Beis"
+      ],
+      "date": "March 6, '27"
+    },
+    {
+      "week": "2027-03-13",
+      "parsha": "Parshas Pekudei",
+      "special": [],
+      "date": "March 13, '27"
+    },
+    {
+      "week": "2027-03-20",
+      "parsha": "Parshas Vayikra",
+      "special": [
+        "Shabbos Zachor"
+      ],
+      "date": "March 20, '27"
+    },
+    {
+      "week": "2027-03-27",
+      "parsha": "Parshas Tzav",
+      "special": [
+        "Shabbos Parah"
+      ],
+      "date": "March 27, '27"
+    },
+    {
+      "week": "2027-04-03",
+      "parsha": "Parshas Shmini",
+      "special": [
+        "Shabbos HaChodesh",
+        "Mevorchim Chodesh Nisan"
+      ],
+      "date": "April 3, '27"
+    },
+    {
+      "week": "2027-04-10",
+      "parsha": "Parshas Tazria",
+      "special": [],
+      "date": "April 10, '27"
+    },
+    {
+      "week": "2027-04-17",
+      "parsha": "Parshas Metzora",
+      "special": [
+        "Shabbos HaGadol"
+      ],
+      "date": "April 17, '27"
+    }
+  ]
+}

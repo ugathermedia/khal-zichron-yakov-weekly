@@ -7,6 +7,7 @@
   <title>Khal Zichron Yakov Weekly</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="weekly-sheet.css?v=11">
+  <link rel="stylesheet" href="sponsorship-season.css?v=2">
   <script defer src="calendar.js?v=1"></script>
   <script defer src="https://unpkg.com/kosher-zmanim@0.9.0/dist/kosher-zmanim.min.js"></script>
   <script defer src="bootstrap.js"></script>
@@ -21,6 +22,7 @@
   <script defer src="jpeg-export.js?v=1"></script>
   <script defer src="announcement-recurrence.js?v=1"></script>
   <script defer src="weekly-sheet.js?v=14"></script>
+  <script defer src="sponsorship-season.js?v=2"></script>
 </head>
 <body>
   <header class="topbar">
@@ -38,6 +40,7 @@
     <nav class="app-tabs" aria-label="Schedule views">
       <button type="button" class="app-tab active" data-view-tab="weekly">Weekly schedule</button>
       <button type="button" class="app-tab" data-view-tab="holiday">Holiday schedules</button>
+      <button type="button" class="app-tab" data-view-tab="sponsorships">Shalosh Seudos Sponsorships</button>
     </nav>
 
     <section class="controls" data-app-view="weekly">
@@ -162,6 +165,25 @@
         <p>Holiday planners stay available here without cluttering the regular weekly production screen.</p>
       </div>
       <div id="holidayPlannerMount"></div>
+    </section>
+    <section id="sponsorshipSeasonView" class="sponsor-season-view" data-app-view="sponsorships" hidden>
+      <div class="holiday-view-head">
+        <div class="eyebrow">5787 · BERESHIS THROUGH SHABBOS HAGADOL</div>
+        <h2>Shalosh Seudos Sponsorships</h2>
+        <p>All 28 Shabbosim on one Letter-size page. Sponsorships are refreshed from the public signup form. Only public names and dedications appear here.</p>
+      </div>
+      <div class="sponsor-season-controls">
+        <button id="sponsorSeasonRefresh" type="button" class="primary">Refresh Sponsorships</button>
+        <button id="sponsorSeasonJpeg" type="button">Export JPEG (under 1 MB)</button>
+        <button id="sponsorSeasonPrint" type="button">Print / Save PDF</button>
+      </div>
+      <p id="sponsorSeasonStatus" class="sponsor-season-note" role="status">Open this tab to load live sponsorships.</p>
+      <div id="sponsorSeasonPreview" class="sponsor-season-viewport">
+        <article id="sponsorSeasonSheet" class="sponsor-season-sheet" aria-label="Shalosh Seudos full season sponsorship sheet">
+          <img id="sponsorSeasonBackground" class="sponsor-season-background" src="assets/shalosh-seudos-sponsorship-background.jpg" alt="" width="1582" height="2048">
+          <div id="sponsorSeasonRows" class="sponsor-season-rows"></div>
+        </article>
+      </div>
     </section>
   </main>
 </body>

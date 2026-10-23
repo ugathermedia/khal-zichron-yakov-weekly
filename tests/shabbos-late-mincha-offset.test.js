@@ -64,13 +64,13 @@ function afterRules(f) {
 
 // Existing :05 rounding uses the exact Shkiah, not the displayed minute.
 const now = fixture();
-assert.equal(now.mode.getLateMinchaOffset(), 30);
-assert.equal(now.mode.seasonalMinchaTime(), '5:40', '6:14:48 - 30 => 5:44:48 => 5:40');
+assert.equal(now.mode.getLateMinchaOffset(), 35);
+assert.equal(now.mode.seasonalMinchaTime(), '5:35', '6:14:48 - 35 => 5:39:48 => 5:35');
 const next = afterRules(now);
-assert.equal(next.mincha.time, '5:40');
-assert.equal(next.shiur.time, '5:10', 'shiur remains 30 minutes before late Mincha');
+assert.equal(next.mincha.time, '5:35');
+assert.equal(next.shiur.time, '5:05', 'shiur remains 30 minutes before late Mincha');
 assert.equal(next.likras.time, '5:25', 'independent Friday Likras Shabbos 35-min rule unchanged');
-assert.match(next.mincha.source, /at least 30 min/);
+assert.match(next.mincha.source, /at least 35 min/);
 
 // Screenshot fixture: Shabbos has both an earlier 2:15 Mincha and a later
 // 5:35 Mincha labelled just "מנחה". Previously the seasonal 30-minute
@@ -79,8 +79,8 @@ const screenshot = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true, su
 assert.equal(screenshot.mode.lateShabbosMinchaIndex(), 4);
 const corrected = afterRules(screenshot);
 assert.equal(corrected.mincha.label, 'מנחה');
-assert.equal(corrected.mincha.time, '5:40');
-assert.equal(corrected.shiur.time, '5:10');
+assert.equal(corrected.mincha.time, '5:35');
+assert.equal(corrected.shiur.time, '5:05');
 assert.equal(corrected.likras.time, '5:25');
 assert.equal(screenshot.state.shabbos.find(r => r.label === 'מנחה א׳' && r.time === '2:15').time, '2:15');
 assert.equal(screenshot.state.shabbos.find(r => r.label === 'מנחה / קבלת שבת').time, '6:00', 'Friday Mincha unchanged');
@@ -88,12 +88,12 @@ assert.equal(screenshot.state.shabbos.find(r => r.label === 'מנחה / קבלת
 // Same detection controls Shabbos Shuva drashos and shiur suppression.
 const shuva = fixture({ lateLabel: 'מנחה', earlyShabbosMincha: true, special: 'shabbos-shuva' });
 const shuvaRows = afterRules(shuva);
-assert.equal(shuvaRows.mincha.time, '5:40');
+assert.equal(shuvaRows.mincha.time, '5:35');
 assert.equal(shuvaRows.shiur.hiddenByMode, true);
-assert.equal(shuva.state.shabbos.find(r => r.label === 'דרשת שבת שובה – אנשים').time, '4:50');
-assert.equal(shuva.state.shabbos.find(r => r.label === 'דרשת שבת שובה – נשים').time, '3:40');
+assert.equal(shuva.state.shabbos.find(r => r.label === 'דרשת שבת שובה – אנשים').time, '4:45');
+assert.equal(shuva.state.shabbos.find(r => r.label === 'דרשת שבת שובה – נשים').time, '3:35');
 
-// User can select 35 again; stored setting persists on another Shabbos.
+// The 35-minute setting persists on another Shabbos.
 const oldStyle = fixture({ setting: 35 });
 assert.equal(oldStyle.mode.seasonalMinchaTime(), '5:35');
 const older = afterRules(oldStyle);
@@ -103,30 +103,41 @@ assert.equal(older.likras.time, '5:25');
 
 const sharedStore = new Map([['kzy-weekly:shabbos-late-mincha-minutes', '30']]);
 const week1 = fixture({ store: sharedStore });
-assert.equal(afterRules(week1).mincha.time, '5:40');
+assert.equal(afterRules(week1).mincha.time, '5:35');
 const week2 = fixture({ store: sharedStore });
 week2.state.friday = new Date('2026-10-23T12:00:00Z');
-assert.equal(afterRules(week2).mincha.time, '5:40', 'same global setting survives date changes');
-assert.equal(week2.mode.getLateMinchaOffset(), 30);
+assert.equal(afterRules(week2).mincha.time, '5:35', 'same global setting survives date changes');
+assert.equal(week2.mode.getLateMinchaOffset(), 35);
 
 // Winter and Summer with Shalosh Seudos share the same setting;
  // Summer without Shalosh Seudos retains the untouched board schedule.
 const summer = fixture({ setting: 30, season: 'summer-ss' });
-assert.equal(afterRules(summer).mincha.time, '5:40');
+assert.equal(afterRules(summer).mincha.time, '5:35');
 const summerNoSs = fixture({ setting: 30, season: 'summer-no-ss' });
 assert.equal(afterRules(summerNoSs).mincha.time, '5:30');
 
 // Reject bad stored input and fall back safely to new default.
 for (const invalid of ['oops', '0', '14', '61', '30.5']) {
   const f = fixture({ setting: invalid });
-  assert.equal(f.mode.getLateMinchaOffset(), 30, 'invalid value ' + invalid);
+  assert.equal(f.mode.getLateMinchaOffset(), 35, 'invalid value ' + invalid);
 }
 assert.equal(fixture({ setting: 60 }).mode.getLateMinchaOffset(), 60);
-assert.equal(fixture({ setting: 15 }).mode.getLateMinchaOffset(), 15);
+assert.equal(fixture({ setting: 15 }).mode.getLateMinchaOffset(), 35);
 
 // UI setting must be global to this browser, not dependent on selected week.
 assert.match(source, /localStorage\.setItem\(SHABBOS_LATE_MINCHA_OFFSET_KEY, String\(requested\)\)/);
 assert.match(source, /id="shabbosLateMinchaOffset"/);
 assert.match(source, /getLateMinchaOffset\(\)\)\;/);
 
-console.log('Shabbos late Mincha: screenshot label, 30-min default, :05 floor, shiur, Shuva, seasons and cross-week persistence passed.');
+console.log('Shabbos late Mincha: screenshot label, 35-min minimum, :05 floor, shiur, Shuva, seasons and cross-week persistence passed.');
+
+// Whole five-minute boundaries and exact seconds must always preserve the gap.
+for (let minute = 0; minute < 60; minute++) {
+  for (const second of [0, 29, 30, 59]) {
+    const f = fixture({sunsetInstant: `2026-10-17T18:${String(minute).padStart(2,'0')}:${String(second).padStart(2,'0')}-04:00`});
+    const [h,m] = f.mode.seasonalMinchaTime().split(':').map(Number);
+    const gap = 18*60 + minute + second/60 - ((h+12)*60+m);
+    assert.ok(gap >= 35 && gap < 40, `gap ${gap}`);
+    assert.equal(m % 5, 0);
+  }
+}

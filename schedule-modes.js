@@ -5,7 +5,7 @@
   const SHABBOS_LATE_MINCHA_OFFSET_KEY = 'kzy-weekly:shabbos-late-mincha-minutes';
   const getLateMinchaOffset = () => {
     const saved = Number(localStorage.getItem(SHABBOS_LATE_MINCHA_OFFSET_KEY));
-    return Number.isInteger(saved) && saved >= 15 && saved <= 60 ? saved : 30;
+    return Number.isInteger(saved) && saved >= 35 && saved <= 60 ? saved : 35;
   };
   const SPECIAL_PREFIX = 'kzy-weekly:special-mode:';
   const SPECIAL_TIMES_PREFIX = 'kzy-weekly:special-times:';
@@ -154,7 +154,7 @@
       get('second') / 60 + d.getUTCMilliseconds() / 60000;
     // Use the full-precision sunset, never displayed/rounded Shkiah.
     // Round DOWN to the prior :05, maintaining at least the selected
-    // number of minutes before actual Shkiah (default: 30 minutes).
+    // number of minutes before actual Shkiah (default: 35 minutes).
     return clockFromLocalMinutes(Math.floor((exactMinutes - getLateMinchaOffset()) / 5) * 5);
   }
 
@@ -408,7 +408,7 @@
           <div class="mode-note" id="seasonRuleNote"></div>
           <div class="late-mincha-control" id="lateMinchaControl">
             <label for="shabbosLateMinchaOffset">Shabbos afternoon Mincha</label>
-            <input id="shabbosLateMinchaOffset" type="number" min="15" max="60" step="1" inputmode="numeric">
+            <input id="shabbosLateMinchaOffset" type="number" min="35" max="60" step="1" inputmode="numeric">
             <span>minutes before Shkiah</span>
             <span class="late-mincha-help">Saved for all weeks in this browser. Time rounds down to the preceding :05.</span>
           </div>
@@ -434,7 +434,7 @@
 
     card.querySelector('#shabbosLateMinchaOffset').addEventListener('change', async e => {
       const requested = Number(e.target.value);
-      if (!e.target.value.trim() || !Number.isInteger(requested) || requested < 15 || requested > 60) {
+      if (!e.target.value.trim() || !Number.isInteger(requested) || requested < 35 || requested > 60) {
         e.target.value = String(getLateMinchaOffset());
         return;
       }

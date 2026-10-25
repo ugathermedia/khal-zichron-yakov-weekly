@@ -121,19 +121,21 @@
     const ctx=canvas.getContext('2d');
     if(!ctx)throw new Error('This browser cannot create the export canvas.');
     ctx.scale(2550/816,3300/1056);
-    ctx.fillStyle='#3c2c74';ctx.fillRect(816*.114,1056*.371,816*.773,1056*.026);
-    ctx.fillStyle='#fff';ctx.font='700 9px Heebo,Arial';ctx.textBaseline='middle';ctx.textAlign='left';
-    ['Date','Motzaei Shabbos / Hebrew date','Sponsorship & dedication'].forEach((label,i)=>ctx.fillText(label,816*.114+5+[0,58,234][i],1056*.384));
     ctx.fillStyle='#fff';ctx.fillRect(0,0,816,1056);
-    ctx.drawImage(bg,0,0,816,1056);
-    ctx.fillStyle='#3c2c74';ctx.fillRect(816*.114,1056*.371,816*.773,1056*.026);
-    ctx.fillStyle='#fff';ctx.font='700 9px Heebo,Arial';ctx.textBaseline='middle';ctx.textAlign='left';
-    ['Date','Motzaei Shabbos / Hebrew date','Sponsorship & dedication'].forEach((label,i)=>ctx.fillText(label,816*.114+5+[0,58,234][i],1056*.384));
-    ctx.fillStyle='#fff';ctx.fillRect(816*.114,1056*.397,816*.773,1056*.499);
+    ctx.fillStyle='#ffdf63';ctx.fillRect(0,0,816,234);
+    ctx.drawImage(bg,93,12,630,210);
     const bounds=sheet.getBoundingClientRect(),scale=816/bounds.width;
     const box=el=>{const r=el.getBoundingClientRect();return {x:(r.left-bounds.left)*scale,y:(r.top-bounds.top)*scale,width:r.width*scale,height:r.height*scale};};
+    const title=sheet.querySelector('.avos-sheet-title'),t=box(title);
+    ctx.fillStyle='#351369';ctx.font='750 14px Heebo,Arial';ctx.textBaseline='middle';ctx.textAlign='center';
+    ctx.fillText(title.textContent,408,t.y+t.height/2);
+    const head=sheet.querySelector('.avos-table-head'),h=box(head);
+    ctx.fillStyle='#351369';ctx.fillRect(h.x,h.y,h.width,h.height);
+    ctx.fillStyle='#fff';ctx.font='700 10px Heebo,Arial';ctx.textAlign='left';
+    for(const label of head.children){const c=box(label);ctx.fillText(label.textContent,c.x,c.y+c.height/2);}
     for(const row of rowsRoot.children) {
       const r=box(row),style=getComputedStyle(row);
+      ctx.fillStyle=style.backgroundColor;ctx.fillRect(r.x,r.y,r.width,r.height);
       if(parseFloat(style.borderBottomWidth)>0) {
         ctx.strokeStyle=style.borderBottomColor;ctx.lineWidth=1;
         ctx.beginPath();ctx.moveTo(r.x,r.y+r.height-.5);ctx.lineTo(r.x+r.width,r.y+r.height-.5);ctx.stroke();
@@ -172,7 +174,7 @@
       const result=await window.WeeklyJpegExport.compressToLimit(canvas);
       const url=URL.createObjectURL(result.blob);
       const a=document.createElement('a');
-      a.href=url;a.download='KZY-Shalosh-Seudos-5787.jpg';document.body.appendChild(a);a.click();a.remove();
+      a.href=url;a.download='KZY-Avos-Ubanim-5787.jpg';document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),60000);
       setStatus('Exported full season JPEG · '+result.width+' × '+result.height+' · '+Math.round(result.size/1000)+' KB (under 1 MB).');
     }catch(e){setStatus('Could not export JPEG: '+e.message,true);}

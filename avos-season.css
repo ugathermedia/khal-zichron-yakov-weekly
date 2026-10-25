@@ -32,3 +32,16 @@
 .avos-row{padding:0 5px}.avos-parsha{font-size:11px}.avos-date{font-size:10.5px}
 
 .avos-table-head{position:absolute;top:37.1%;height:2.6%;left:11.4%;right:11.3%;display:grid;grid-template-columns:52px 170px minmax(0,1fr);gap:6px;align-items:center;padding:0 5px;background:#3c2c74;color:white;font-size:9px;font-weight:700}
+
+/* Digital season flyer: compact artwork, generous live dedication rows. */
+.avos-season-sheet::before{content:"";position:absolute;inset:0 0 auto;height:234px;background:#ffdf63;z-index:-1}
+.avos-season-background{inset:12px auto auto 93px;width:630px;height:210px;object-fit:contain;z-index:0}
+.avos-sheet-title{position:absolute;top:247px;left:24px;right:24px;text-align:center;font-size:14px;font-weight:750;letter-spacing:1px;color:#351369}
+.avos-table-head{top:280px;height:28px;left:24px;right:24px;grid-template-columns:48px 150px minmax(0,1fr);gap:10px;padding:0 8px;font-size:10px;background:#351369}
+.avos-season-rows{top:308px;bottom:32px;left:24px;right:24px}
+.avos-row{grid-template-columns:48px 150px minmax(0,1fr);gap:10px;padding:0 8px;border-color:#ded8e8}
+.avos-row:nth-child(even){background:#faf8fd}
+.avos-cell{font-size:14px;line-height:1.25;color:#291c3a}
+.avos-date{font-size:11px;color:#6d6378}
+.avos-parsha{font-size:11.5px;font-weight:650}
+.avos-available{color:#9b91a5;font-size:12px;font-weight:400}

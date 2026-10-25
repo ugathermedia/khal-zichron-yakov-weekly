@@ -22,6 +22,7 @@
   let calendarLoading = false;
   let calendarError = '';
   let sponsorRequest = 0;
+  let avosRequest = 0;
   let announcementDrag = null;
 
   const weekKey = () => state.friday ? localISO(state.friday) : '';
@@ -52,6 +53,7 @@
           ...(recurrenceId ? { recurrenceId } : {}),
           ...(booked ? {
             bookingWeek: a.bookingWeek,
+            bookingProgram: a.bookingProgram === 'avos' ? 'avos' : 'shalosh',
             bookingTopDefault: a.bookingTopDefault === true,
             bookingValues: { title: String(a.bookingValues?.title || ''), body: String(a.bookingValues?.body || ''), names: String(a.bookingValues?.names || '') }
           } : {})
@@ -136,6 +138,7 @@
     else if (carried) status.textContent = 'Carried over ' + carried + ' recurring announcement' + (carried === 1 ? '' : 's') + ' from the previous week. All fields remain editable.';
     else if (draft.announcements.length) status.textContent = 'Loaded this week’s saved announcements.';
     refreshSponsorship();
+    refreshAvosSponsorship();
   }
   async function refreshSponsorship() {
     const requestedWeek = currentWeek;
@@ -152,7 +155,7 @@
       if (!Object.prototype.hasOwnProperty.call(data, 'sponsorship')) throw new Error('Invalid sponsorship response');
       if (requestedWeek !== currentWeek || requestNumber !== sponsorRequest) return;
       const booking = data.sponsorship;
-      let index = draft.announcements.findIndex(a => a.bookingWeek === saturday);
+      let index = draft.announcements.findIndex(a => a.bookingWeek === saturday && a.bookingProgram !== 'avos');
       if (!booking) {
         if (index >= 0) { draft.announcements.splice(index, 1); drawEditor(); save(); }
         sponsorStatus.textContent = 'No sponsor booked for this Shabbos.';
@@ -182,6 +185,56 @@
       sponsorStatus.textContent = 'Sponsor synced from the signup form. Local edits and visibility are kept.';
     } catch {
       if (requestedWeek !== currentWeek || requestNumber !== sponsorRequest) return;
+      sponsorStatus.textContent = 'Could not refresh the sponsor. Saved announcements were kept. Try Refresh sponsor again.';
+      sponsorStatus.classList.add('error');
+    }
+  }
+  async function refreshAvosSponsorship() {
+    const requestedWeek = currentWeek;
+    if (!requestedWeek) return;
+    const requestNumber = ++avosRequest;
+    const saturday = localISO(addDays(state.friday, 1));
+    const sponsorStatus = document.getElementById('avosBookingStatus');
+    sponsorStatus.textContent = 'Checking Avos Ubanim sponsorship…';
+    sponsorStatus.classList.remove('error');
+    try {
+      const response = await fetch('https://zichronyakov.ugathermedia.com/avos-ubanim/api/sponsorship?week=' + encodeURIComponent(saturday), { cache: 'no-store', credentials: 'omit' });
+      if (!response.ok) throw new Error('Sponsorship lookup failed');
+      const data = await response.json();
+      if (!Object.prototype.hasOwnProperty.call(data, 'sponsorship')) throw new Error('Invalid sponsorship response');
+      if (requestedWeek !== currentWeek || requestNumber !== avosRequest) return;
+      const booking = data.sponsorship;
+      let index = draft.announcements.findIndex(a => a.bookingWeek === saturday && a.bookingProgram === 'avos');
+      if (!booking) {
+        if (index >= 0) { draft.announcements.splice(index, 1); drawEditor(); save(); }
+        sponsorStatus.textContent = 'No sponsor booked for this Shabbos.';
+        return;
+      }
+      if (booking.week !== saturday || typeof booking.sponsorName !== 'string' || typeof booking.dedication !== 'string') throw new Error('Invalid sponsorship response');
+      // Only a record tied to this exact Shabbos is the synced sponsorship.
+      // Never identify one by its title: an ordinary recurring announcement
+      // may also legitimately be called "Avos Ubanim".
+      const previous = index >= 0 ? draft.announcements[index] : null;
+      const values = { title: 'AVOS UBANIM', body: booking.dedication, names: booking.sponsorName };
+      const announcement = previous ? { ...previous } : { title: '', subtitle: '', body: '', names: '', visible: true, repeatWeekly: false };
+      for (const field of Object.keys(values)) {
+        if (!previous?.bookingWeek || announcement[field] === previous.bookingValues?.[field]) announcement[field] = values[field];
+      }
+      if (/sponsorship available/i.test(announcement.subtitle)) announcement.subtitle = '';
+      announcement.bookingWeek = saturday;
+      announcement.bookingProgram = 'avos';
+      announcement.repeatWeekly = false;
+      delete announcement.recurrenceId;
+      announcement.bookingTopDefault = true;
+      announcement.bookingValues = values;
+      if (index >= 0) draft.announcements[index] = announcement;
+      else index = draft.announcements.push(announcement) - 1;
+      // Apply the top position once, then respect the editor's saved order.
+      if (!previous?.bookingTopDefault && index > 0) draft.announcements.unshift(...draft.announcements.splice(index, 1));
+      drawEditor(); save();
+      sponsorStatus.textContent = 'Sponsor synced from the signup form. Local edits and visibility are kept.';
+    } catch {
+      if (requestedWeek !== currentWeek || requestNumber !== avosRequest) return;
       sponsorStatus.textContent = 'Could not refresh the sponsor. Saved announcements were kept. Try Refresh sponsor again.';
       sponsorStatus.classList.add('error');
     }
@@ -439,8 +492,8 @@
     a.href = url; a.download = `KZY-Announcements-${currentWeek}.json`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
-  document.getElementById('refreshSponsorBooking').onclick = () => refreshSponsorship();
-  window.addEventListener('focus', () => { if (!document.querySelector('.workspace').hidden) refreshSponsorship(); });
+  document.getElementById('refreshSponsorBooking').onclick = () => {refreshSponsorship();refreshAvosSponsorship();};
+  window.addEventListener('focus', () => { if (!document.querySelector('.workspace').hidden) {refreshSponsorship();refreshAvosSponsorship();} });
   document.getElementById('restoreAnnouncements').onchange = async e => {
     const file = e.target.files[0];
     if (!file) return;

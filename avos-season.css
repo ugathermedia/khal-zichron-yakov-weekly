@@ -1,0 +1,34 @@
+.avos-season-view[hidden]{display:none!important}
+.avos-season-view{background:#fff;border:1px solid #e1e3e8;border-radius:14px;padding:22px}
+.avos-season-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+.avos-season-controls button,.avos-season-controls label{font-size:13px;padding:10px 13px;border:1px solid #cfd4dd;border-radius:7px;background:white;color:#172238;cursor:pointer}
+.avos-season-controls input{max-width:250px}
+.avos-season-note{font-size:12px;color:#5a6677}.avos-season-note.error{color:#a12626;font-weight:700}
+.avos-season-viewport{width:min(100%,816px);margin:18px auto 4px;position:relative}
+.avos-season-sheet{width:816px;height:1056px;position:relative;transform-origin:top left;background:#fff;color:#172238;font-family:Heebo,Arial,sans-serif;box-shadow:0 8px 30px #17223826;isolation:isolate}
+.avos-season-background{position:absolute;inset:0;width:100%;height:100%;z-index:-1;object-fit:fill}
+.avos-avos-rows{position:absolute;top:39.7%;bottom:10.4%;left:11.4%;right:11.3%;background:#fff;display:grid;grid-template-rows:repeat(19,minmax(0,1fr))}
+.avos-row{display:grid;grid-template-columns:52px 170px minmax(0,1fr);align-items:stretch;border-bottom:1px solid #ccd2d8;min-width:0;gap:6px}
+.avos-row:last-child{border-bottom:0}
+.avos-cell{font-size:12px;display:flex;align-items:center;white-space:normal;overflow:hidden;min-width:0;font-weight:450;line-height:1.2}
+.avos-cell span{display:block;max-width:100%;overflow-wrap:anywhere}
+.avos-date span{white-space:nowrap}
+.avos-date{font-size:11.5px;color:#4f5f75;font-variant-numeric:tabular-nums}
+.avos-parsha{font-weight:650;color:#1c314a}
+.avos-sponsor{text-align:left}.avos-available{color:#7a8793;font-style:italic}
+.avos-cell.overflow{outline:1px solid #b42626}
+@media print{
+ body[data-active-view="avos"] > main:not(#printSheetMount){display:block!important;padding:0!important;margin:0!important;width:8.5in!important;max-width:none!important}
+ body[data-active-view="avos"] > #printSheetMount{display:none!important}
+ body[data-active-view="avos"] main>*:not(.avos-season-view){display:none!important}
+ body[data-active-view="avos"] .avos-season-view{display:block!important;border:0!important;padding:0!important;margin:0!important}
+ body[data-active-view="avos"] .avos-season-view>*:not(.avos-season-viewport){display:none!important}
+ body[data-active-view="avos"] .avos-season-viewport{margin:0!important;width:816px!important;height:1056px!important;overflow:hidden!important;break-inside:avoid}
+ body[data-active-view="avos"] .avos-season-sheet{transform:none!important;box-shadow:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ body[data-active-view="avos"].avos-print-invalid .avos-season-viewport{display:none!important}
+ body[data-active-view="avos"].avos-print-invalid #avosSeasonStatus{display:block!important;padding:24px}
+}
+
+.avos-row{padding:0 5px}.avos-parsha{font-size:11px}.avos-date{font-size:10.5px}
+
+.avos-table-head{position:absolute;top:37.1%;height:2.6%;left:11.4%;right:11.3%;display:grid;grid-template-columns:52px 170px minmax(0,1fr);gap:6px;align-items:center;padding:0 5px;background:#3c2c74;color:white;font-size:9px;font-weight:700}

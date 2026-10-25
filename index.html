@@ -17,12 +17,13 @@
   <script defer src="schedule-modes.js?v=late-mincha-35"></script>
   <script defer src="weekday-planner.js?v=13"></script>
   <script defer src="succos-planner.js?v=5"></script>
-  <script defer src="view-tabs.js?v=2"></script>
+  <script defer src="view-tabs.js?v=aub-1"></script>
   <script defer src="assets/vendor/html-to-image-1.11.13.js"></script>
   <script defer src="jpeg-export.js?v=1"></script>
   <script defer src="announcement-recurrence.js?v=1"></script>
-  <script defer src="weekly-sheet.js?v=14"></script>
+  <script defer src="weekly-sheet.js?v=aub-1"></script>
   <script defer src="sponsorship-season.js?v=2"></script>
+<link rel="stylesheet" href="avos-season.css?v=1"><script defer src="avos-season.js?v=1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -41,7 +42,7 @@
       <button type="button" class="app-tab active" data-view-tab="weekly">Weekly schedule</button>
       <button type="button" class="app-tab" data-view-tab="holiday">Holiday schedules</button>
       <button type="button" class="app-tab" data-view-tab="sponsorships">Shalosh Seudos Sponsorships</button>
-    </nav>
+    <button type="button" class="app-tab" data-view-tab="avos">Avos Ubanim Sponsorships</button></nav>
 
     <section class="controls" data-app-view="weekly">
       <div class="eyebrow">WEEK</div>
@@ -90,7 +91,7 @@
           <div class="sponsor-booking-controls">
             <a href="https://kzy-shalosh-seudos.starrydune2.chatgpt.site" target="_blank" rel="noopener">Shalosh Seudos signup ↗</a>
             <button type="button" id="refreshSponsorBooking">Refresh sponsor</button>
-            <p id="sponsorBookingStatus" class="note" role="status"></p>
+            <p id="sponsorBookingStatus" class="note" role="status"></p><a href="https://zichronyakov.ugathermedia.com/avos-ubanim" target="_blank" rel="noopener">Avos Ubanim signup ↗</a><p id="avosBookingStatus" class="note" role="status"></p>
           </div>
           <label class="sheet-field">Parsha title override <input id="sheetTitleInput" placeholder="Automatic from the selected week" dir="auto"></label>
           <p class="note">Check <strong>Repeat weekly</strong> to copy an announcement to the next week automatically. Each week's copy remains editable, hideable, movable, and deletable. Drag ⠿ Move to reorder (keyboard ↑ / ↓).</p>
@@ -182,6 +183,25 @@
         <article id="sponsorSeasonSheet" class="sponsor-season-sheet" aria-label="Shalosh Seudos full season sponsorship sheet">
           <img id="sponsorSeasonBackground" class="sponsor-season-background" src="assets/shalosh-seudos-sponsorship-background.jpg" alt="" width="1582" height="2048">
           <div id="sponsorSeasonRows" class="sponsor-season-rows"></div>
+        </article>
+      </div>
+    </section>
+    <section id="avosSeasonView" class="avos-season-view" data-app-view="avos" hidden>
+      <div class="holiday-view-head">
+        <div class="eyebrow">5787 · VAYERA THROUGH VAYAKHEL</div>
+        <h2>Avos Ubanim Sponsorships</h2>
+        <p>All 19 Motzaei Shabbos sessions on one Letter-size page. Sponsorships are refreshed from the public signup form. Saturday-night English dates · Sunday Hebrew dates.</p>
+      </div>
+      <div class="avos-season-controls">
+        <button id="avosSeasonRefresh" type="button" class="primary">Refresh Sponsorships</button>
+        <button id="avosSeasonJpeg" type="button">Export JPEG (under 1 MB)</button>
+        <button id="avosSeasonPrint" type="button">Print / Save PDF</button>
+      </div>
+      <p id="avosSeasonStatus" class="avos-season-note" role="status">Open this tab to load live sponsorships.</p>
+      <div id="avosSeasonPreview" class="avos-season-viewport">
+        <article id="avosSeasonSheet" class="avos-season-sheet" aria-label="Avos Ubanim full season sponsorship sheet">
+          <img id="avosSeasonBackground" class="avos-season-background" crossorigin="anonymous" src="https://zichronyakov.ugathermedia.com/avos-ubanim/artwork.jpg" alt="" width="1582" height="2048">
+          <div class="avos-table-head"><span>Date</span><span>Motzaei Shabbos / Hebrew date</span><span>Sponsorship &amp; dedication</span></div><div id="avosSeasonRows" class="avos-season-rows"></div>
         </article>
       </div>
     </section>

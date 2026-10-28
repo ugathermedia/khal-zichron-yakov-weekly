@@ -117,6 +117,17 @@ async function main() {
   assert.ok(boundary.mincha('Tuesday').includes('1:15'), '1:15 precisely at Mincha Gedola qualifies');
   assert.ok(boundary.mincha('Tuesday').includes('1:45'));
 
+  const winter = await fixture({ friday: '2026-10-30', manualDays: { '2026-11-02': { kollelInSession: false, minchaCustom: '4:20' } } });
+  for (const day of ['Sunday','Monday','Tuesday','Wednesday','Thursday']) {
+    assert.equal(winter.mincha(day)[0], '12:45', 'standard-time Mincha is first');
+    assert.ok(winter.mincha(day).includes('1:45'), 'regular Mincha preserved');
+  }
+  assert.ok(winter.mincha('Monday').includes('4:20'), 'later override preserved');
+  assert.ok(!winter.mincha('Monday').includes('1:15'), 'kollel setting preserved');
+  for (const friday of ['2026-10-23','2027-03-12']) {
+    const daylight = await fixture({ friday });
+    assert.ok(!daylight.mincha('Sunday').includes('12:45'), 'no additional Mincha during daylight time');
+  }
   console.log('Kollel Mincha additive regression passed for Oct 11, Oct 18, out of session and exact Mincha Gedola boundaries.');
 }
 

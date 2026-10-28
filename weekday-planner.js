@@ -268,11 +268,21 @@
       reason: qualifies ? 'Kollel 1:15' : '1:15 is before Mincha Gedola' };
   }
 
-  function combinedMinchaTimes(early, added, late) {
-    const times = [early, added, late].filter(Boolean).filter((time, index, all) =>
+  function standardTimeMincha(date) {
+    // Additional weekday minyan begins with the November 2026 clock change.
+    if (localISO(date) < '2026-11-01') return '';
+    const noon = new Date(localISO(date) + 'T12:00:00Z');
+    const offset = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York', timeZoneName: 'shortOffset'
+    }).formatToParts(noon).find(part => part.type === 'timeZoneName')?.value;
+    return offset === 'GMT-5' ? '12:45' : '';
+  }
+
+  function combinedMinchaTimes(early, added, late, standard = '') {
+    const times = [early, added, late, standard].filter(Boolean).filter((time, index, all) =>
       all.findIndex(other => other === time || (Number.isFinite(minchaSortMinutes(time)) && minchaSortMinutes(other) === minchaSortMinutes(time))) === index);
     // Preserve original order until the optional extra Mincha is set.
-    if (!added) return times.join(' · ');
+    if (!added && !standard) return times.join(' · ');
     return times.sort((a, b) => minchaSortMinutes(a) - minchaSortMinutes(b)).join(' · ');
   }
 
@@ -342,7 +352,7 @@
         minchaRows.push({
           label: d.label,
           dayNames: [d.english],
-          time: combinedMinchaTimes(board.minchaEarly, kollel.time, String(manual.minchaCustom || '').trim() || autoMincha),
+          time: combinedMinchaTimes(board.minchaEarly, kollel.time, String(manual.minchaCustom || '').trim() || autoMincha, standardTimeMincha(d.date)),
           source: 'Early Mincha fixed at ' + board.minchaEarly + ' · ' + kollel.reason + ' · ' + (manual.minchaCustom
             ? 'Manual later Mincha'
             : getMode() === 'exact'

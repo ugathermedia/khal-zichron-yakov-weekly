@@ -7,7 +7,7 @@
 .avos-season-viewport{width:min(100%,816px);margin:18px auto 4px;position:relative}
 .avos-season-sheet{width:816px;height:1056px;position:relative;transform-origin:top left;background:#fff;color:#172238;font-family:Heebo,Arial,sans-serif;box-shadow:0 8px 30px #17223826;isolation:isolate}
 .avos-season-background{position:absolute;inset:0;width:100%;height:100%;z-index:-1;object-fit:fill}
-.avos-season-rows{position:absolute;top:39.7%;bottom:10.4%;left:11.4%;right:11.3%;background:#fff;display:grid;grid-template-rows:repeat(19,minmax(0,1fr))}
+.avos-season-rows{position:absolute;top:39.7%;bottom:10.4%;left:11.4%;right:11.3%;background:#fff;display:grid;grid-template-rows:repeat(18,minmax(0,1fr))}
 .avos-row{display:grid;grid-template-columns:52px 170px minmax(0,1fr);align-items:stretch;border-bottom:1px solid #ccd2d8;min-width:0;gap:6px}
 .avos-row:last-child{border-bottom:0}
 .avos-cell{font-size:12px;display:flex;align-items:center;white-space:normal;overflow:hidden;min-width:0;font-weight:450;line-height:1.2}

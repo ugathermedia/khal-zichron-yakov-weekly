@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const START = '2026-10-31', END = '2027-03-06';
+  const START = '2026-10-31', END = '2027-02-27';
   const API = 'https://zichronyakov.ugathermedia.com/avos-ubanim';
   const $ = id => document.getElementById(id);
   const status = $('avosSeasonStatus');
@@ -33,8 +33,8 @@
     const response=await fetch(API+'/api/season',{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(20000)});
     if(!response.ok)throw new Error('Season lookup failed');
     const data=await response.json();
-    if(!Array.isArray(data.weeks)||data.weeks.length!==19)throw new Error('Incomplete season');
-    return data.weeks.map((w,i)=>{
+    if(!Array.isArray(data.weeks)||data.weeks.filter(w=>w.week<=END).length!==18)throw new Error('Incomplete season');
+    return data.weeks.filter(w=>w.week<=END).map((w,i)=>{
       const expected=new Date(START+'T12:00:00Z');expected.setUTCDate(expected.getUTCDate()+i*7);
       if(w.week!==iso(expected)||typeof w.parsha!=='string'||typeof w.hebrewDate!=='string')throw new Error('Invalid season row');
       return {day:w.week,date:new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',timeZone:'UTC'}).format(expected),parsha:w.parsha.replace('Parshas ',''),special:[w.hebrewDate],sponsor:publicSponsor(w,w.week)};
@@ -81,7 +81,7 @@
   }
   async function refresh() {
     if(busy) return;
-    setBusy(true);dataReady=false;rowsRoot.replaceChildren();setStatus('Loading season calendar and 19 sponsorships…');
+    setBusy(true);dataReady=false;rowsRoot.replaceChildren();setStatus('Loading season calendar and 18 sponsorships…');
     try {
       const rows=await calendarRows();
       if(document.fonts) await document.fonts.ready;
@@ -89,7 +89,7 @@
       render(rows);dataReady=true;
       if(!rowsRoot.querySelector('.overflow')) setStatus('Live sponsorship data loaded · '+rows.filter(r=>r.sponsor).length+' reserved · '+rows.filter(r=>!r.sponsor).length+' available.');
     }catch(e) {
-      dataReady=false;setStatus('Could not load the complete season: '+e.message+'. Export is blocked until all 19 weeks load.',true);
+      dataReady=false;setStatus('Could not load the complete season: '+e.message+'. Export is blocked until all 18 weeks load.',true);
     }finally{setBusy(false);}
   }
   function resizePreview(){

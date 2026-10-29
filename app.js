@@ -277,6 +277,19 @@ function supplementShabbos(rows) {
     result.push({ label: 'צאת הכוכבים ר״ת', time: fmtDateTime(shab.Tzais72 || shab.Tzais72Minutes, 'nightfall'), source: 'KosherZmanim sunset +72' });
   }
 
+  const avosDate = state.friday && localISO(addDays(state.friday, 1));
+  if (avosDate >= '2026-10-31' && avosDate <= '2027-02-27' &&
+      !result.some(r => /אבות ובנים|avos\s+u.?banim/i.test(r.label))) {
+    const tzeis72 = shab.Tzais72 || shab.Tzais72Minutes;
+    const exact = tzeis72 ? new Date(tzeis72).getTime() : NaN;
+    if (Number.isFinite(exact)) {
+      // Round UP from the exact instant to preserve the full 35-minute gap.
+      const minutes = Math.ceil((exact / 60000 + 35) / 5) * 5;
+      result.push({ label: 'אבות ובנים', time: minutesToClock(minutes),
+        source: 'Avos Ubanim: at least 35 min after Tzeis 72, rounded up to :05' });
+    }
+  }
+
   return result;
 }
 

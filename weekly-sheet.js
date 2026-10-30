@@ -300,7 +300,11 @@
     return visible;
   }
   function announcementDetailsHTML(a) {
-    const body = a.body ? `<div class="sheet-announcement-body" dir="auto">${esc(a.body)}</div>` : '';
+    const pizza = 'Pizza is dedicated לז״נ צירל בת ר׳ מרדכי.';
+    // Isolate this mixed-language sentence from a preceding Hebrew dedication.
+    const bodyHTML = esc(a.body || '').replace(esc(pizza),
+      '<bdi dir="ltr">Pizza is dedicated <bdi dir="rtl">לז״נ צירל בת ר׳ מרדכי</bdi>.</bdi>');
+    const body = a.body ? `<div class="sheet-announcement-body" dir="auto">${bodyHTML}</div>` : '';
     const name = a.names.trim();
     const sponsored = a.bookingWeek || /^(?:shalosh|sholosh)\s+seudos$/i.test(a.title.trim());
     const nameText = sponsored && name && !/^sponsored\s+by\b/i.test(name) ? `Sponsored by ${name}` : name;

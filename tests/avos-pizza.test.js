@@ -18,3 +18,9 @@ for (const date of ['2026-10-31','2026-11-07','2027-02-27']) {
 }
 for (const date of ['2026-10-24','2027-03-06']) assert.equal(ctx.weeklyAnnouncements([],date).length,0);
 console.log('Weekly-only pizza dedication, blank weeks, season boundaries, nonmutation and deduplication passed.');
+const renderCode = source.slice(source.indexOf('  function announcementDetailsHTML('), source.indexOf('  function fitZone('));
+ctx.esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+vm.runInNewContext(renderCode, ctx);
+const html = ctx.announcementDetailsHTML({title:'AVOS UBANIM',names:'Sponsor',bookingWeek:'2026-10-31',body:'לעילוי נשמת\n\n'+pizza});
+assert.ok(html.includes('<bdi dir="ltr">Pizza is dedicated <bdi dir="rtl">לז״נ צירל בת ר׳ מרדכי</bdi>.</bdi>'));
+assert.ok(html.includes('לעילוי נשמת'));

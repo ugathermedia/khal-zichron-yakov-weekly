@@ -269,8 +269,8 @@
   }
 
   function standardTimeMincha(date) {
-    // Additional weekday minyan begins with the November 2026 clock change.
-    if (localISO(date) < '2026-11-01') return '';
+    // Additional Sunday minyan begins with the November 2026 clock change.
+    if (date.getDay() !== 0 || localISO(date) < '2026-11-01') return '';
     const noon = new Date(localISO(date) + 'T12:00:00Z');
     const offset = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/New_York', timeZoneName: 'shortOffset'

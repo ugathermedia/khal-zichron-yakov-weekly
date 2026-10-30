@@ -118,8 +118,9 @@ async function main() {
   assert.ok(boundary.mincha('Tuesday').includes('1:45'));
 
   const winter = await fixture({ friday: '2026-10-30', manualDays: { '2026-11-02': { kollelInSession: false, minchaCustom: '4:20' } } });
+  assert.equal(winter.mincha('Sunday')[0], '12:45', 'Sunday standard-time Mincha is first');
   for (const day of ['Sunday','Monday','Tuesday','Wednesday','Thursday']) {
-    assert.equal(winter.mincha(day)[0], '12:45', 'standard-time Mincha is first');
+    if (day !== 'Sunday') assert.ok(!winter.mincha(day).includes('12:45'), 'no additional 12:45 Mincha on ' + day);
     assert.ok(winter.mincha(day).includes('1:45'), 'regular Mincha preserved');
   }
   assert.ok(winter.mincha('Monday').includes('4:20'), 'later override preserved');

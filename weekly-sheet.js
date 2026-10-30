@@ -278,13 +278,26 @@
     document.getElementById('sheetWeekOf').textContent = 'Week of ' + addDays(state.friday, 2).toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
     document.getElementById('sheetShabbosRows').innerHTML = scheduleHTML(state.shabbos);
     document.getElementById('sheetWeekdayRows').innerHTML = scheduleHTML(state.weekday);
-    document.getElementById('sheetAnnouncementContent').innerHTML = draft.announcements.filter(a => a.visible).map(a => `
+    document.getElementById('sheetAnnouncementContent').innerHTML = weeklyAnnouncements(draft.announcements, localISO(saturday)).map(a => `
       <section class="sheet-announcement" dir="auto">
         ${a.title ? `<h3 dir="auto">${esc(a.title)}</h3>` : ''}
         ${a.subtitle.trim() ? `<div class="sheet-announcement-subtitle" dir="auto">${esc(a.subtitle)}</div>` : ''}
         ${announcementDetailsHTML(a)}
       </section>`).join('');
     requestFit();
+  }
+  function weeklyAnnouncements(announcements, saturday) {
+    const visible = announcements.filter(a => a.visible).map(a => ({ ...a }));
+    if (saturday < '2026-10-31' || saturday > '2027-02-27') return visible;
+    const pizza = 'Pizza is dedicated לז״נ צירל בת ר׳ מרדכי.';
+    let avos = visible.find(a => a.bookingProgram === 'avos') ||
+      visible.find(a => /^(?:avos\s+u.?banim|אבות ובנים)$/i.test(a.title.trim()));
+    if (!avos) {
+      avos = { title: 'AVOS UBANIM', subtitle: '', body: '', names: '', visible: true };
+      visible.unshift(avos);
+    }
+    if (!avos.body.includes(pizza)) avos.body = [avos.body.trim(), pizza].filter(Boolean).join('\n\n');
+    return visible;
   }
   function announcementDetailsHTML(a) {
     const body = a.body ? `<div class="sheet-announcement-body" dir="auto">${esc(a.body)}</div>` : '';

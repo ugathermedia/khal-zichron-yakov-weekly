@@ -3,8 +3,6 @@
   const OFFSET_KEY = 'kzy-weekly:weekday-exact-offset';
   const PLAN_PREFIX = 'kzy-weekly:weekday-plan:';
   const rcCache = new Map();
-  // Confirmed shul schedule exceptions to automatic legal-holiday minyanim.
-  const NO_AUTOMATIC_845 = new Set(['2026-10-12']);
 
   const DAYS = [
     { add: 2, key: 'sun', label: 'יום א׳', ui: 'Sun', english: 'Sunday' },
@@ -57,14 +55,8 @@
     const holidays = [];
     for (const y of years) {
       holidays.push(...observedFixedHoliday(y,0,1,"New Year's Day"));
-      holidays.push({ date:nthWeekday(y,0,1,3), name:'Martin Luther King Jr. Day' });
-      holidays.push({ date:nthWeekday(y,1,1,3), name:"Presidents' Day" });
       holidays.push({ date:lastWeekday(y,4,1), name:'Memorial Day' });
-      holidays.push(...observedFixedHoliday(y,5,19,'Juneteenth'));
-      holidays.push(...observedFixedHoliday(y,6,4,'Independence Day'));
       holidays.push({ date:nthWeekday(y,8,1,1), name:'Labor Day' });
-      holidays.push({ date:nthWeekday(y,9,1,2), name:'Columbus Day' });
-      holidays.push(...observedFixedHoliday(y,10,11,'Veterans Day'));
       holidays.push({ date:nthWeekday(y,10,4,4), name:'Thanksgiving' });
       holidays.push(...observedFixedHoliday(y,11,25,'Christmas Day'));
     }
@@ -301,7 +293,7 @@
       const manual = plan.days?.[dateKey] || {};
       const autoRc = rc.has(dateKey);
       const holiday = legalHolidayName(d.date);
-      const auto845 = d.key === 'sun' || (!!holiday && !NO_AUTOMATIC_845.has(dateKey));
+      const auto845 = d.key === 'sun' || !!holiday;
 
       const early630 = hasOwn(manual, 'early630') ? !!manual.early630 : autoRc;
       const extra845 = hasOwn(manual, 'extra845') ? !!manual.extra845 : auto845;
@@ -438,7 +430,7 @@
       </div>
       <div class="wp-note">Default zman: 1 Cheshvan–end of Adar; 1 Iyar–8 Av; 1 Elul–8 Tishrei. No Yom Tov. These are estimated kollel dates; override any exception below. Mincha Gedola uses the standard GRA calculation.</div>
       <div id="weekdayAdjustments"></div>
-      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before Neitz, rounded up to a whole minute, including custom times. An additional seasonal Neitz minyan qualifies when the calculated start is at least 5 minutes after an earlier minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. Its start is rounded to the nearest :05 and must remain at least 5 minutes from every other minyan. Matching days are bundled. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday and U.S. federal legal holidays automatically add 8:45, except confirmed shul schedule exceptions (October 12, '26). Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
+      <div class="wp-note">Rosh Chodesh normally changes the first Shacharis from 6:45 to 6:30. On Sundays, Shacharis starts no earlier than 22 minutes before Neitz, rounded up to a whole minute, including custom times. An additional seasonal Neitz minyan qualifies when the calculated start is at least 5 minutes after an earlier minyan: normally 6:50 or later, or 6:35 or later on Rosh Chodesh. Its start is rounded to the nearest :05 and must remain at least 5 minutes from every other minyan. Matching days are bundled. The regular early minyan remains. Sunday's shifted minyan is never duplicated. Sunday, Thanksgiving, Christmas, New Year's Day, Labor Day, and Memorial Day automatically add 8:45. Any day can be manually changed for Bein Hazmanim or another special schedule.</div>
     `;
     const anchor = document.getElementById('scheduleModeCard') || document.getElementById('weekTitle');
     anchor.insertAdjacentElement('afterend', card);

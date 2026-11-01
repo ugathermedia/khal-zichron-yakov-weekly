@@ -1,0 +1,12 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
+const source = fs.readFileSync(path.join(__dirname,'../weekday-planner.js'),'utf8');
+const code = source.slice(source.indexOf('  function observedFixedHoliday('),source.indexOf('  async function roshChodeshDates('));
+const ctx={sameDate:(a,b)=>a.getTime()===b.getTime()};
+vm.runInNewContext(code,ctx);
+for(const d of ['2026-11-26','2026-12-25','2027-01-01','2027-05-31','2027-09-06']) assert.ok(ctx.legalHolidayName(new Date(d+'T12:00:00')),d);
+for(const d of ['2026-11-11','2027-01-18','2027-02-15','2027-06-19','2027-07-04','2026-10-12']) assert.equal(ctx.legalHolidayName(new Date(d+'T12:00:00')),'',d);
+assert.ok(source.includes("const auto845 = d.key === 'sun' || !!holiday;"),'Sunday rule preserved');
+console.log('Only the five approved holidays trigger holiday 8:45; Veterans Day excluded.');

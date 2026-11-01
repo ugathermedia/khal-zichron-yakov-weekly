@@ -171,6 +171,12 @@ function applyRounding(mins, row) {
   return Math.round(mins / step) * step;
 }
 
+function isMotzaei72Offset(row) {
+  return Number(row?.minutes) === 72 && /after/i.test(row?.offset || '') &&
+    /shab|sat/i.test(row?.from || '') && /shkia|sunset/i.test(row?.from || '') &&
+    /72/.test(row?.text || row?.label || '') && !nearestMinutes(row);
+}
+
 function automaticTime(row) {
   const base = sourceZman(row.from);
   if (!base) return '';
@@ -193,7 +199,7 @@ function automaticTime(row) {
     /shkia|sunset|plag/i.test(source) &&
     /shkia|sunset|plag|שקיע|פלג/i.test(label);
   mins = floorDirectZman ? Math.floor(mins)
-    : directZman ? Math.round(mins)
+    : directZman || isMotzaei72Offset(row) ? Math.round(mins)
     : scheduledAtTzeis ? Math.ceil(mins)
     : applyRounding(mins, row);
   return minutesToClock(mins);

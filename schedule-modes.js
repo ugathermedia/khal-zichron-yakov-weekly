@@ -61,6 +61,10 @@
     if (row?.source === 'KosherZmanim sunset +72' && row.label === 'צאת הכוכבים ר״ת') {
       exact = shabbos.Tzais72 || shabbos.Tzais72Minutes;
       direction = 'up';
+    } else if (raw && isMotzaei72Offset(raw)) {
+      const sunset = sourceZman(raw.from);
+      exact = sunset ? new Date(new Date(sunset).getTime() + 72 * 60000) : null;
+      direction = 'down'; // The offset row previously dropped its seconds.
     } else if (row?.source === 'KosherZmanim MGA fixed 72') {
       exact = shabbos.SofZmanShmaMGA72Minutes;
     } else if (row?.source === 'KosherZmanim GRA') {

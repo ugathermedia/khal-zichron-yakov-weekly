@@ -240,6 +240,8 @@
     }
   }
   function scheduleHTML(rows) {
+    const boldShema = state.friday && localISO(state.friday) === '2026-11-06';
+    const shemaTime = time => boldShema ? `<strong>${esc(time || '—')}</strong>` : esc(time || '—');
     const visible = rows.filter(r => !r.hiddenByMode);
     const mga = visible.find(r => !r.section && /קריאת שמע.*מג״א/.test(r.label || ''));
     const gra = visible.find(r => !r.section && /קריאת שמע.*גר״א/.test(r.label || ''));
@@ -248,7 +250,7 @@
       if (r.footnote) return `<div class="sheet-footnote" dir="ltr">${esc(r.label)}</div>`;
       if (mga && gra && r === gra) return '';
       if (mga && gra && r === mga) {
-        return `<div class="sheet-row"><span class="sheet-row-label">סו״ז ק״ש</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time sheet-ks-time"><span dir="rtl">מג״א <bdi dir="ltr">${esc(mga.time || '—')}</bdi></span><span aria-hidden="true">·</span><span dir="rtl">גר״א <bdi dir="ltr">${esc(gra.time || '—')}</bdi></span></span></div>`;
+        return `<div class="sheet-row"><span class="sheet-row-label">סו״ז ק״ש</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time sheet-ks-time"><span dir="rtl">מג״א <bdi dir="ltr">${shemaTime(mga.time)}</bdi></span><span aria-hidden="true">·</span><span dir="rtl">גר״א <bdi dir="ltr">${shemaTime(gra.time)}</bdi></span></span></div>`;
       }
       // Keep a group of minyan times together on one row, in reading order.
       const time = String(r.time || '—').split(/\s*[·,]\s*/).map(part => {

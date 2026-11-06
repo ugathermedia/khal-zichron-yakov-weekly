@@ -243,6 +243,10 @@
     const boldShema = state.friday && localISO(state.friday) === '2026-11-06';
     const shemaTime = time => boldShema ? `<strong>${esc(time || '—')}</strong>` : esc(time || '—');
     const visible = rows.filter(r => !r.hiddenByMode);
+    const morning = visible.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
+    const shaloshAfter = rows === state.shabbos && morning >= 0 &&
+      !visible.some(r => /סעודה שלישית|שלוש סעודות|שלש סעודות/.test(r.label || ''))
+      ? visible.filter((r, i) => i > morning && !r.section && /^מנחה(?:\s|$)/.test(r.label || '')).at(-1) : null;
     const mga = visible.find(r => !r.section && /קריאת שמע.*מג״א/.test(r.label || ''));
     const gra = visible.find(r => !r.section && /קריאת שמע.*גר״א/.test(r.label || ''));
     return visible.map(r => {
@@ -260,7 +264,8 @@
       const names = r.dayNames || [];
       const label = names.length > 1 ? `${names[0]}–${names[names.length - 1]}` : names[0] || scheduleDisplayLabel(r.label);
       const reason = r.reason ? `<span class="sheet-row-note">(${esc(r.reason)})</span>` : '';
-      return `<div class="sheet-row"><span class="sheet-row-label ${names.length ? 'sheet-day-label' : ''}">${esc(label)}${reason}</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time">${time}</span></div>`;
+      const shalosh = r === shaloshAfter ? '<div class="sheet-row"><span class="sheet-row-label" dir="rtl">סעודה שלישית בבית הכנסת</span></div>' : '';
+      return `<div class="sheet-row"><span class="sheet-row-label ${names.length ? 'sheet-day-label' : ''}">${esc(label)}${reason}</span><span class="sheet-row-rule" aria-hidden="true"></span><span class="sheet-row-time">${time}</span></div>` + shalosh;
     }).join('');
   }
   function renderSheet() {

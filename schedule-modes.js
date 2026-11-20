@@ -205,6 +205,13 @@
   }
 
   function applyScheduleModes() {
+    // Shabbos morning returns to 8:30 from November 21, 2026.
+    // Also correct saved 8:45 snapshots while preserving other manual times.
+    if (localISO(state.friday) >= '2026-11-20') {
+      state.shabbos.forEach(r => {
+        if (!r.section && r.label === 'שחרית' && r.time === '8:45') r.time = '8:30';
+      });
+    }
     // Remove previously injected special rows before recalculating.
     state.shabbos = state.shabbos.filter(r => !r.modeOwned);
     state.shabbos.forEach(r => {

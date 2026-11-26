@@ -138,21 +138,21 @@ async function main() {
     ['2026-12-03', false], ['2026-12-04', true], ['2026-12-11', true], ['2026-12-12', false]
   ]) assert.equal(chanukah.unit.isChanukahNight(new Date(date + 'T12:00:00Z')), expected, date + ' evening');
   const visible = f => f.state.shabbos.filter(r => !r.hiddenByMode);
-  assert.equal(visible(chanukah).filter(r => r.label === 'מעריב נוסף' && r.time === '5:15').length, 2, 'First Friday and Motzaei Shabbos each get additional Maariv');
+  assert.equal(visible(chanukah).filter(r => r.label === 'מעריב נוסף' && r.time === '5:15').length, 0, 'Friday and Motzaei Shabbos excluded from additional Maariv');
   assert.equal(visible(chanukah).filter(r => r.label === 'מנחה נוספת' && r.time === '3:00').length, 1);
   assert.ok(!visible(chanukah).some(r => r.label === 'לקראת שבת'));
   assert.equal(visible(chanukah).find(r => r.label === 'מנחה / קבלת שבת').time, '4:10', 'Regular Friday Mincha preserved');
   assert.equal(visible(chanukah).find(r => r.label === 'מנחה').time, '3:45', 'Shabbos Mincha preserved');
   const nightRows = chanukah.state.weekday.filter(r => r.source.includes('Chanukah additional Maariv'));
   assert.equal(nightRows.length, 1, 'Identical weekday evenings combined');
-  assert.equal(nightRows[0].dayNames.join(','), 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday');
+  assert.equal(nightRows[0].dayNames.join(','), 'Sunday,Monday,Tuesday,Wednesday,Thursday');
   assert.equal(nightRows[0].time, '5:15');
   assert.equal(chanukah.state.weekday.find(r => r.source === 'KZY: at shkiah + fixed minyanim').time,
     week.state.weekday.find(r => r.source === 'KZY: at shkiah + fixed minyanim').time, 'Existing Maariv preserved');
   chanukah.unit.applyChanukahShabbos();
-  assert.equal(visible(chanukah).filter(r => r.chanukahOwned).length, 3, 'Repeated calculation has no duplicates');
+  assert.equal(visible(chanukah).filter(r => r.chanukahOwned).length, 1, 'Repeated calculation keeps only the extra Friday Mincha');
   const finalFriday = await runWeek({ fridayKey: '2026-12-11' });
-  assert.equal(visible(finalFriday).filter(r => r.label === 'מעריב נוסף').length, 1, 'Last Friday night included; following Motzaei Shabbos excluded');
+  assert.equal(visible(finalFriday).filter(r => r.label === 'מעריב נוסף').length, 0, 'No extra Maariv on the last Friday or Motzaei Shabbos');
   assert.ok(!finalFriday.state.weekday.some(r => r.source.includes('Chanukah additional Maariv')), 'No additional Maariv after Chanukah');
   const after = await runWeek({ fridayKey: '2026-12-18' });
   for (const ordinary of [week, after]) {

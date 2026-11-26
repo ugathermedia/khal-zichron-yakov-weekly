@@ -107,7 +107,7 @@
       }
     });
     const row = (label, time) => ({ label, time, source: 'Chanukah additional minyan', chanukahOwned: true, modeOwned: true });
-    let morning = state.shabbos.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
+    const morning = state.shabbos.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
     if (morning < 0) return;
     if (isChanukahNight(state.friday)) {
       state.shabbos.slice(0, morning).forEach(r => {
@@ -118,15 +118,6 @@
       });
       const mincha = state.shabbos.findIndex((r, i) => i < morning && !r.section && !r.hiddenByMode && /^מנחה/.test(r.label || ''));
       if (mincha >= 0) state.shabbos.splice(mincha, 0, row('מנחה נוספת', '3:00'));
-      morning = state.shabbos.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
-      // Keep Friday Maariv before the Shabbos-day section heading, if present.
-      let endFriday = morning;
-      while (endFriday > 0 && state.shabbos[endFriday - 1].section) endFriday--;
-      state.shabbos.splice(endFriday, 0, row('מעריב נוסף', '5:15'));
-    }
-    if (isChanukahNight(addDays(state.friday, 1))) {
-      const avos = state.shabbos.findIndex(r => r.label === 'אבות ובנים');
-      state.shabbos.splice(avos < 0 ? state.shabbos.length : avos, 0, row('מעריב נוסף', '5:15'));
     }
   }
 
@@ -413,7 +404,7 @@
       });
     }
 
-    const chanukahMaariv = dates.filter(d => isChanukahNight(d.date)).map(d => ({
+    const chanukahMaariv = dates.filter(d => d.key !== 'fri' && isChanukahNight(d.date)).map(d => ({
       label: d.label, dayNames: [d.english], time: '5:15',
       source: 'Chanukah additional Maariv', weekdayPlanner: true
     }));

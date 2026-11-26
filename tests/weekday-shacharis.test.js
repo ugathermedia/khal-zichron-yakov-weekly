@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'weekday-planner.js'),
 const end = /  window\.refresh\(\);\s*\}\)\(\);\s*$/;
 assert.match(source, end, 'weekday planner bootstrap still has a known entry point');
 const testSource = source.replace(end,
-  '  window.__weekdayTest = { buildWeekdayPlan, sundayNeitzLimit };\n})();\n');
+  '  window.__weekdayTest = { buildWeekdayPlan, sundayNeitzLimit, isChanukahMorning };\n})();\n');
 
 const makeDate = (day, time) => `2026-10-${String(day).padStart(2, '0')}T${time}Z`;
 const localISO = date => date.toISOString().slice(0, 10);
@@ -19,11 +19,11 @@ const addDays = (date, offset) => {
 };
 const clock = minutes => `${Math.floor(minutes / 60) % 12 || 12}:${String(minutes % 60).padStart(2, '0')}`;
 
-async function runWeek({ rcDate = null, manualDays = {} } = {}) {
+async function runWeek({ rcDate = null, manualDays = {}, fridayKey = '2026-10-16' } = {}) {
   // This intentionally mimics an old or special board snapshot. The first three
   // board Shacharis entries must NOT determine ordinary weekly shul defaults.
   const state = {
-    friday: new Date('2026-10-16T12:00:00Z'),
+    friday: new Date(fridayKey + 'T12:00:00Z'),
     weekday: [
       { label: 'שחרית א׳', time: '6:30' },
       { label: 'שחרית ב׳', time: '6:45' },
@@ -34,7 +34,7 @@ async function runWeek({ rcDate = null, manualDays = {} } = {}) {
     diagnostics: []
   };
   const cache = new Map([
-    ['kzy-weekly:weekday-plan:2026-10-16', JSON.stringify({ days: manualDays })]
+    ['kzy-weekly:weekday-plan:' + fridayKey, JSON.stringify({ days: manualDays })]
   ]);
   const sandbox = {
     state, Date, Intl, Math, Number, String, RegExp, Object, Set, Map,
@@ -45,8 +45,9 @@ async function runWeek({ rcDate = null, manualDays = {} } = {}) {
     },
     getZmanim(date) {
       const day = date.getUTCDate();
+      const makeDate = (_, time) => localISO(date) + 'T' + time + 'Z';
       return {
-        SeaLevelSunrise: makeDate(day, day <= 20 ? '11:11:40' : '11:16:40'),
+        SeaLevelSunrise: makeDate(day, fridayKey === '2026-12-04' ? '12:11:40' : day <= 20 ? '11:11:40' : '11:16:40'),
         SeaLevelSunset: makeDate(day, '22:10:20'),
         MinchaGedola: makeDate(day, '17:10:00')
       };
@@ -103,6 +104,25 @@ async function main() {
   } });
   assert.ok(custom.dayRow('Tuesday').time.includes('7:45'), 'Explicit custom times preserved');
   assert.ok(!custom.dayRow('Tuesday').time.includes('7:30'), 'Explicit replacement respected');
+
+  const chanukah = await runWeek({ fridayKey: '2026-12-04', rcDate: '2026-12-10' });
+  for (const day of ['Monday', 'Tuesday', 'Wednesday', 'Friday']) {
+    const row = chanukah.dayRow(day);
+    assert.ok(row.time.startsWith('6:40 · '), day + ' starts at 6:40 on Chanukah');
+    assert.ok(row.time.includes('7:30'), 'Second minyan preserved');
+    assert.ok(row.neitzTimes.length, 'Additional seasonal Neitz minyan preserved');
+  }
+  assert.ok(chanukah.dayRow('Thursday').time.startsWith('6:30 · '), 'Rosh Chodesh overrides Chanukah');
+  const sundayChanukah = chanukah.dayRow('Sunday');
+  assert.ok(sundayChanukah.time.startsWith('6:50 · '), 'Sunday Neitz overrides Chanukah in the full planner');
+  const laterSunday = chanukah.unit.sundayNeitzLimit(['6:40', '7:30', '8:45'], {
+    minutes: 410, start: '6:50', neitz: '7:12'
+  });
+  assert.equal(Array.from(laterSunday.times).join(','), '6:50,7:30,8:45', 'Later Sunday Neitz overrides Chanukah');
+  for (const [date, expected] of [
+    ['2026-12-04', false], ['2026-12-05', true], ['2026-12-12', true], ['2026-12-13', false],
+    ['2025-12-14', false], ['2025-12-15', true], ['2025-12-22', true], ['2025-12-23', false]
+  ]) assert.equal(chanukah.unit.isChanukahMorning(new Date(date + 'T12:00:00Z')), expected, date);
 
   console.log('Week of Oct 18: ordinary, Sunday/Neitz, RC, old board, manual Shacharis tests passed.');
 }

@@ -80,6 +80,21 @@
     }
   }
 
+  function isChanukahMorning(date) {
+    // Eight daytime dates beginning on 25 Kislev, including short-Kislev years.
+    // Check civil noon so candle-lighting on the preceding evening is excluded.
+    const hebrew = new Intl.DateTimeFormat('en-u-ca-hebrew', {
+      timeZone: 'UTC', month: 'long', day: 'numeric'
+    });
+    const noon = new Date(localISO(date) + 'T12:00:00Z');
+    for (let offset = 0; offset < 8; offset++) {
+      const parts = hebrew.formatToParts(new Date(noon.getTime() - offset * 86400000));
+      if (parts.find(p => p.type === 'month')?.value === 'Kislev' &&
+          parts.find(p => p.type === 'day')?.value === '25') return true;
+    }
+    return false;
+  }
+
   function fixedFromBoard(rows) {
     // These are the shul's standing Shacharis times, not the current values
     // on the public board. The board can contain Rosh Chodesh, Neitz, or
@@ -299,7 +314,7 @@
       const extra845 = hasOwn(manual, 'extra845') ? !!manual.extra845 : auto845;
 
       let shacharisTimes = [
-        early630 ? '6:30' : board.shacharisA,
+        early630 ? '6:30' : isChanukahMorning(d.date) ? '6:40' : board.shacharisA,
         board.shacharisB
       ];
       if (extra845) shacharisTimes.push(board.extraShacharis);

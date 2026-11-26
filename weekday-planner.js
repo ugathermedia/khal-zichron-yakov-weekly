@@ -95,6 +95,41 @@
     return false;
   }
 
+  const isChanukahNight = date => isChanukahMorning(addDays(date, 1));
+
+  function applyChanukahShabbos() {
+    if (!Array.isArray(state.shabbos)) return;
+    state.shabbos = state.shabbos.filter(r => !r.chanukahOwned);
+    state.shabbos.forEach(r => {
+      if (r.chanukahHidden) {
+        delete r.hiddenByMode;
+        delete r.chanukahHidden;
+      }
+    });
+    const row = (label, time) => ({ label, time, source: 'Chanukah additional minyan', chanukahOwned: true, modeOwned: true });
+    let morning = state.shabbos.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
+    if (morning < 0) return;
+    if (isChanukahNight(state.friday)) {
+      state.shabbos.slice(0, morning).forEach(r => {
+        if (/לקראת שבת/.test(r.label || '') && !r.hiddenByMode) {
+          r.hiddenByMode = true;
+          r.chanukahHidden = true;
+        }
+      });
+      const mincha = state.shabbos.findIndex((r, i) => i < morning && !r.section && !r.hiddenByMode && /^מנחה/.test(r.label || ''));
+      if (mincha >= 0) state.shabbos.splice(mincha, 0, row('מנחה נוספת', '3:00'));
+      morning = state.shabbos.findIndex(r => !r.section && /^שחרית(?:\s|$)/.test(r.label || ''));
+      // Keep Friday Maariv before the Shabbos-day section heading, if present.
+      let endFriday = morning;
+      while (endFriday > 0 && state.shabbos[endFriday - 1].section) endFriday--;
+      state.shabbos.splice(endFriday, 0, row('מעריב נוסף', '5:15'));
+    }
+    if (isChanukahNight(addDays(state.friday, 1))) {
+      const avos = state.shabbos.findIndex(r => r.label === 'אבות ובנים');
+      state.shabbos.splice(avos < 0 ? state.shabbos.length : avos, 0, row('מעריב נוסף', '5:15'));
+    }
+  }
+
   function fixedFromBoard(rows) {
     // These are the shul's standing Shacharis times, not the current values
     // on the public board. The board can contain Rosh Chodesh, Neitz, or
@@ -378,6 +413,11 @@
       });
     }
 
+    const chanukahMaariv = dates.filter(d => isChanukahNight(d.date)).map(d => ({
+      label: d.label, dayNames: [d.english], time: '5:15',
+      source: 'Chanukah additional Maariv', weekdayPlanner: true
+    }));
+
     state.weekday = [
       { section:true, label:'שחרית', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...bundleMatchingDayRows(shacharisRows, 'Matching Shacharis times grouped'),
@@ -385,9 +425,11 @@
       { section:true, label:'מנחה', time:'', source:'Weekday planner', weekdayPlanner:true },
       ...bundleMatchingDayRows(minchaRows, 'Matching Mincha times grouped'),
       { section:true, label:'מעריב', time:'', source:'Weekday planner', weekdayPlanner:true },
-      { label:'מעריב', time:['שקיעה', board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY: at shkiah + fixed minyanim', weekdayPlanner:true }
+      { label:'מעריב', time:['שקיעה', board.maarivB, board.maarivC].filter(Boolean).join(' · '), source:'KZY: at shkiah + fixed minyanim', weekdayPlanner:true },
+      ...bundleMatchingDayRows(chanukahMaariv, 'Chanukah additional Maariv')
     ];
 
+    applyChanukahShabbos();
     state.weekdayPlannerMeta = meta;
     state.weekdayPlannerBoard = board;
   }

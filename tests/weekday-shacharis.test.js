@@ -8,7 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'weekday-planner.js'),
 const end = /  window\.refresh\(\);\s*\}\)\(\);\s*$/;
 assert.match(source, end, 'weekday planner bootstrap still has a known entry point');
 const testSource = source.replace(end,
-  '  window.__weekdayTest = { buildWeekdayPlan, sundayNeitzLimit, isChanukahMorning };\n})();\n');
+  '  window.__weekdayTest = { buildWeekdayPlan, sundayNeitzLimit, isChanukahMorning, isChanukahNight, applyChanukahShabbos };\n})();\n');
 
 const makeDate = (day, time) => `2026-10-${String(day).padStart(2, '0')}T${time}Z`;
 const localISO = date => date.toISOString().slice(0, 10);
@@ -30,6 +30,16 @@ async function runWeek({ rcDate = null, manualDays = {}, fridayKey = '2026-10-16
       { label: 'שחרית ראשון / חג', time: '7:30' },
       { label: 'מנחה מוקדמת', time: '1:45' },
       { label: 'מעריב', time: '8:15' }, { label: 'מעריב', time: '9:45' }
+    ],
+    shabbos: [
+      { section: true, label: 'ליל שבת' },
+      { label: 'לקראת שבת', time: '3:35' },
+      { label: 'מנחה / קבלת שבת', time: '4:10' },
+      { section: true, label: 'שבת קודש' },
+      { label: 'שחרית', time: '8:30' },
+      { label: 'מנחה', time: '3:45' },
+      { label: 'צאת הכוכבים ר״ת', time: '5:40' },
+      { label: 'אבות ובנים', time: '6:15' }
     ],
     diagnostics: []
   };
@@ -123,6 +133,32 @@ async function main() {
     ['2026-12-04', false], ['2026-12-05', true], ['2026-12-12', true], ['2026-12-13', false],
     ['2025-12-14', false], ['2025-12-15', true], ['2025-12-22', true], ['2025-12-23', false]
   ]) assert.equal(chanukah.unit.isChanukahMorning(new Date(date + 'T12:00:00Z')), expected, date);
+
+  for (const [date, expected] of [
+    ['2026-12-03', false], ['2026-12-04', true], ['2026-12-11', true], ['2026-12-12', false]
+  ]) assert.equal(chanukah.unit.isChanukahNight(new Date(date + 'T12:00:00Z')), expected, date + ' evening');
+  const visible = f => f.state.shabbos.filter(r => !r.hiddenByMode);
+  assert.equal(visible(chanukah).filter(r => r.label === 'מעריב נוסף' && r.time === '5:15').length, 2, 'First Friday and Motzaei Shabbos each get additional Maariv');
+  assert.equal(visible(chanukah).filter(r => r.label === 'מנחה נוספת' && r.time === '3:00').length, 1);
+  assert.ok(!visible(chanukah).some(r => r.label === 'לקראת שבת'));
+  assert.equal(visible(chanukah).find(r => r.label === 'מנחה / קבלת שבת').time, '4:10', 'Regular Friday Mincha preserved');
+  assert.equal(visible(chanukah).find(r => r.label === 'מנחה').time, '3:45', 'Shabbos Mincha preserved');
+  const nightRows = chanukah.state.weekday.filter(r => r.source.includes('Chanukah additional Maariv'));
+  assert.equal(nightRows.length, 1, 'Identical weekday evenings combined');
+  assert.equal(nightRows[0].dayNames.join(','), 'Sunday,Monday,Tuesday,Wednesday,Thursday,Friday');
+  assert.equal(nightRows[0].time, '5:15');
+  assert.equal(chanukah.state.weekday.find(r => r.source === 'KZY: at shkiah + fixed minyanim').time,
+    week.state.weekday.find(r => r.source === 'KZY: at shkiah + fixed minyanim').time, 'Existing Maariv preserved');
+  chanukah.unit.applyChanukahShabbos();
+  assert.equal(visible(chanukah).filter(r => r.chanukahOwned).length, 3, 'Repeated calculation has no duplicates');
+  const finalFriday = await runWeek({ fridayKey: '2026-12-11' });
+  assert.equal(visible(finalFriday).filter(r => r.label === 'מעריב נוסף').length, 1, 'Last Friday night included; following Motzaei Shabbos excluded');
+  assert.ok(!finalFriday.state.weekday.some(r => r.source.includes('Chanukah additional Maariv')), 'No additional Maariv after Chanukah');
+  const after = await runWeek({ fridayKey: '2026-12-18' });
+  for (const ordinary of [week, after]) {
+    assert.ok(!ordinary.state.shabbos.some(r => r.chanukahOwned));
+    assert.ok(visible(ordinary).some(r => r.label === 'לקראת שבת'), 'Ordinary Likras Shabbos unchanged');
+  }
 
   console.log('Week of Oct 18: ordinary, Sunday/Neitz, RC, old board, manual Shacharis tests passed.');
 }
